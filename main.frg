@@ -21,14 +21,17 @@ pred Init {
 
 
 pred WellformedRepo {
+    all b: Branch | {
+        b in Repo.branches
+    }
+    all c: CommitNode | {
+        c in Repo.totalCommits
+    }
+
     // DAG constraints at Repo level
+    // - All branch is reachable from main branch
 
     all b: Branch | {
-        -- if the branch is reachable from the main branch, then that implies that dag constraints apply
-        all c: CommitNode | {
-            
-        }
-        b.^ implies -- dag
     }
     WellfornedBranch[Repo.mainBranch]
 

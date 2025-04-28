@@ -6,9 +6,9 @@ one sig Root extends CommitNode {}
 
 one sig Repo {
     user: one User
-    mainBranch: Branch
-    branches: pfunc Int -> Branch
-    totalcommits: set CommitNode
+    mainBranch: one Branch
+    branches: set Branch
+    totalCommits: set CommitNode
 }
 
 sig Branch {
