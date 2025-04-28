@@ -13,3 +13,89 @@ open "sigs.frg"
 
 -- valid merge:
 -- same # of files and within that, same file ids
+
+
+pred Init {
+    // Size of main branch 
+}
+
+
+pred WellformedRepo {
+    // DAG constraints at Repo level
+
+    all b: Branch | {
+        -- if the branch is reachable from the main branch, then that implies that dag constraints apply
+        all c: CommitNode | {
+            
+        }
+        b.^ implies -- dag
+    }
+    WellfornedBranch[Repo.mainBranch]
+
+    all c: CommitNode | {
+        -- c is reachable from the mainBranch.root
+    }
+}
+
+pred WellformedBranch[b: Branch] {
+    // DAG 
+}
+
+pred validCommit {
+    WellformedBranch[c.currBranch]
+    -- previous commits remain unchanged (fix syntax)
+    all c: CommitNode | {
+        -- to define a valid commit, there must be a change in file state
+        c.fileState' != c.fileState
+
+        
+        c in c.currentBranch.commits implies c' in c.currentBranch.commits
+
+        -- add only one commit
+
+    }
+
+    // New Commit
+    some c: CommitNode | {
+        
+    }
+
+    all c: CommitNode | {
+        c = c.
+    }
+}
+
+-- single commit
+// TODO: concurrent commiting-- add set Branches
+pred Commit[branch: Branch] | {
+    Wellformed
+    one c: CommitNode | {
+        c' not in branch.commits
+    }
+    
+
+    // Only one new commit
+    branch.commits in branch.commits'
+    #{branch.commits'} = #{branch.commits} + 1
+
+    // The new commit is
+}
+
+pred Branch[branchId] {
+
+    Commit[b1, b2: Branch]
+}
+
+pred Merge[featureBranch, destinationBranch: Int] {
+
+}
+
+pred Revert[commitId: Int] {
+
+}
+
+
+run {
+    Init
+    Commit[]
+}

@@ -1,10 +1,12 @@
 #lang forge/temporal
 
-one sig User {}
+sig User {}
+
+one sig Root extends CommitNode {}
 
 one sig Repo {
     user: one User
-    root: lone Root
+    mainBranch: Branch
     branches: pfunc Int -> Branch
     totalcommits: set CommitNode
 }
@@ -16,20 +18,14 @@ sig Branch {
     prev: lone Branch
 }
 
-abstract sig File {
-    id: Int -- unique identifier for each file
-}
-
-abstract sig Modified extends File {}
+// abstract sig Modified extends File {}
 
 sig CommitNode {
     commitID: Int
     currentBranch: one Branch
     next: lone Commit -- sequential commits
     branches: set Branch
-    content: set File -- maps number of commit to files
+    fileState: Int -- unique identifier for each file state
 }
-
-one sig Root extends CommitNode {}
 
 
