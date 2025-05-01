@@ -45,57 +45,39 @@ pred WellformedBranch[b: Branch] {
 
     all c: b.commits | {
         // all commits are valid and reachable
-        c in b.root.^next 
+        c in b.root.*next 
 
         // all commits belong to this branch
         c.currentBranch = b
     }
 }
 
-// establish wellformedness for the entire repo
-// pred WellformedRepo {
-    // all b: Repo.branches | {
-    //     // all branches are reachable from main branch
-    //     // b in Repo.mainBranch.^next
-
-    //     // wellformedness for all branches
-    //     WellformedBranch[b]
-    // }
-
-    // // no floating branches
-    // all b: Branch | {
-    //     b in Repo.branches
-    // }
-
-    // all c: CommitNode | {
-    //     // all commits are accounted for
-    //     c in Repo.totalCommits
-
-    //     // all commits are reachable from main branch root, no floating commits
-    //     c in Repo.mainBranch.root.^next
-    // }
-
-    // // totalCommits accounts for all existing commits
-    // Repo.totalCommits = Repo.branches.commits
-
 pred WellformedRepo {
     // Each branch has at least its root commit
-    all b: Repo.branches | b.root in b.commits
+    all b: Repo.branches | {
+        // wellformedness for all branches
+        WellformedBranch[b]
+    }
     
-    // All commits in branches are accounted for in totalCommits
+    // totalCommits accounts for all existing commits
     Repo.branches.commits in Repo.totalCommits
     
-    // Commits form a DAG (no cycles)
-    no c: CommitNode | c in c.^next
+    // every commit (except root) has exactly one parent
+    all c: CommitNode - Root | lone c.next
     
-    // Each commit (except root) has exactly one parent
-    all c: CommitNode - Root | one c.next
-    
-    // Branches are properly linked via prev
+    // branches are properly linked via prev
     all b: Repo.branches - Repo.mainBranch | one b.prev
     
-    // No dangling branches (all branches reachable via prev from main)
+    // all brances are reachable from main branch roots
     Repo.branches in Repo.mainBranch.*prev
+
+    all c: CommitNode | {
+        // all commits are accounted for
+        c in Repo.totalCommits
+
+        // all commits are reachable from main branch root, no floating commits
+        c in Repo.mainBranch.root.*next
+    }
 }
 
 -- abstraction: all commits are presumed to be valid, file modification is out of scope
