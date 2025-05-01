@@ -1,51 +1,89 @@
 #lang forge/temporal
 open "sigs.frg"
 
--- Initial repository: a single user, one main branch with only its root commit
-fact Init {
-    some repo: Repo |
-        -- user exists
-        repo.user != none
-        -- main branch is registered in repository
-        repo.mainBranch in repo.branches
-        -- main branch has only its root commit
-        repo.mainBranch.commits = repo.mainBranch.root
-        -- totalCommits tracks exactly that root commit
-        repo.totalCommits = repo.mainBranch.commits
-        -- root has no successor
-        repo.mainBranch.root.next = none
-        -- root knows its branch
-        repo.mainBranch.root.currentBranch = repo.mainBranch
-        -- mainBranch has no parent
-        repo.mainBranch.prev = none
+pred commit[pre, post: Repo, newCommit: CommitNode, modifiedFiles: set Int] {
+    // Preconditions
+    newCommit not in pre.totalCommits
+    some currentBranch: pre.branches | {
+        // The committer is working on an existing branch
+        currentBranch in pre.branches
+        newCommit.currentBranch = currentBranch
+        
+        // Post-state changes
+        post.totalCommits = pre.totalCommits + newCommit
+        post.branches = pre.branches
+        
+        // File state changes
+        newCommit.fileState in modifiedFiles  // New file state
+        some parent: CommitNode | {
+            // Parent is current branch head
+            no parent.next and parent in currentBranch.commits
+            newCommit.next = parent          // Link to parent
+            newCommit.fileState != parent.fileState  // Files must change
+        }
+        
+        // Update branch commits
+        currentBranch.commits = pre.currentBranch.commits + newCommit
+        
+        // Temporal frame conditions
+        post.user = pre.user
+        post.mainBranch = pre.mainBranch
+        unchangedBranches[pre, post, currentBranch]
+    }
+    
+    // Maintain commit uniqueness
+    all c: CommitNode | c.commitID != newCommit.commitID
+}
+// Helper predicate for unchanged branches
+pred unchangedBranches[pre, post: Repo, changedBranch: Branch] {
+    all b: pre.branches | 
+        b != changedBranch implies {
+            b.commits = pre.b.commits
+            b.root = pre.b.root
+            b.prev = pre.b.prev
+        }
 }
 
--- No cycles in the commit graph
-pred Acyclic {
+// Valid commit ID assignment
+pred validCommitIDs[repo: Repo] {
+    all disj c1, c2: repo.totalCommits | c1.commitID != c2.commitID
+}
+pred commitOp[pre, post: Repo] {
+    some newCommit: CommitNode, modifiedFiles: set Int |
+        commit[pre, post, newCommit, modifiedFiles]
+}
+fact WellFormedCommits {
+    // Initial commit exists
+    one c: CommitNode | c = Root
+    
+    // All commits except Root have a parent
+    all c: CommitNode - Root | one c.next
+    
+    // No commit cycles
     no c: CommitNode | c in c.^next
+    
+    // File states form a DAG
+    no c: CommitNode | c.fileState in c.^next.fileState
 }
-
--- A branch is well-formed when its commits form a linear, acyclic chain from its root
-pred WellformedBranch[b: Branch] {
-    -- root must belong to commits
-    b.root in b.commits
-    -- commits are all reachable via next from root
-    b.commits = b.root.*next
-    -- no cycles
-    Acyclic
-    -- every commit knows its branch
-    all c: b.commits | c.currentBranch = b
+test expect {
+    commitIncrementsTotalCommits: {
+        all pre, post: Repo | 
+            commitOp[pre, post] implies #post.totalCommits = #pre.totalCommits + 1
+    } is theorem
+    
+    commitChangesCurrentBranch: {
+        all pre, post: Repo, newCommit: CommitNode |
+            commit[pre, post, newCommit, some Int] implies
+                newCommit in post.currentBranch.commits and
+                newCommit not in pre.currentBranch.commits
+    } is theorem
+    
+    commitPreservesOtherBranches: {
+        all pre, post: Repo, b: Branch |
+            commitOp[pre, post] and b != post.currentBranch implies
+                b.commits.post = b.commits.pre
+    } is theorem
 }
-
--- A repository is well-formed when every branch is well-formed and totalCommits aggregates all commits
-pred WellformedRepo {
-    some repo: Repo |
-        -- every branch in repo.branches plus the main branch is well-formed
-        all b: repo.branches + repo.mainBranch | WellformedBranch[b]
-        -- totalCommits equals the union of all branch commits
-        repo.totalCommits = (repo.branches + repo.mainBranch).commits
-}
-
 -- Commit action: extend a branch by one new node
 pred Commit[repo: Repo, b: Branch, newC: CommitNode] {
     WellformedRepo
