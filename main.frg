@@ -52,34 +52,55 @@ pred WellformedBranch[b: Branch] {
     }
 }
 
-   
+// establish wellformedness for the entire repo
+
 pred WellformedRepo {
-    // Each branch has at least its root commit
     all b: Repo.branches | {
         // wellformedness for all branches
         WellformedBranch[b]
     }
-    
-    // totalCommits accounts for all existing commits
-    Repo.branches.commits in Repo.totalCommits
-    
-    // every commit (except root) has exactly one parent
-    all c: CommitNode - Root | lone c.next
-    
-    // branches are properly linked via prev
-    all b: Repo.branches - Repo.mainBranch | one b.prev
-    
-    // all brances are reachable from main branch roots
-    Repo.branches in Repo.mainBranch.*prev
 
     all c: CommitNode | {
         // all commits are accounted for
         c in Repo.totalCommits
 
         // all commits are reachable from main branch root, no floating commits
-        c in Repo.mainBranch.root.*next
+        c in Repo.mainBranch.root.^next
     }
+
+    // totalCommits accounts for all existing commits
+    Repo.branches.commits in Repo.totalCommits
+
+    // Each branch has at least its root commit
+    all b: Repo.branches | b.root in b.commits
+    
+    // All commits in branches are accounted for in totalCommits
+    Repo.branches.commits in Repo.totalCommits
+    
+    // Commits form a DAG (no cycles)
+    no c: CommitNode | c in c.^next
+    
+    // Each commit (except root) has exactly one parent
+    all c: CommitNode - Root | one c.next
+    
+    // Branches are properly linked via prev
+    all b: Repo.branches - Repo.mainBranch | one b.prev
+
+    // No dangling branches (all branches reachable via prev from main)
+    Repo.branches in Repo.mainBranch.*prev
+
 }
+
+// valid and disjoint commit IDs
+pred validCommitIDs[repo: Repo] {
+    all disj c1, c2: repo.totalCommits | c1.commitID != c2.commitID
+}
+
+// valid and disjoint branch IDs
+pred validBranchIDs[repo: Repo] {
+    all disj b1, b2: repo.branches | b1.branchID != b2.branchID
+}
+
 
 -- abstraction: all commits are presumed to be valid, file modification is out of scope
 -- abstraction: concurrent committing modeled through interleaved commits in Forge (any branch modified at a given time)

@@ -4,6 +4,7 @@ open "sigs.frg"
 pred commit[pre, post: Repo, newCommit: CommitNode, modifiedFiles: set Int] {
     // Preconditions
     newCommit not in pre.totalCommits
+    
     some currentBranch: pre.branches | {
         // The committer is working on an existing branch
         currentBranch in pre.branches
@@ -44,10 +45,7 @@ pred unchangedBranches[pre, post: Repo, changedBranch: Branch] {
         }
 }
 
-// Valid commit ID assignment
-pred validCommitIDs[repo: Repo] {
-    all disj c1, c2: repo.totalCommits | c1.commitID != c2.commitID
-}
+
 pred commitOp[pre, post: Repo] {
     some newCommit: CommitNode, modifiedFiles: set Int |
         commit[pre, post, newCommit, modifiedFiles]
@@ -104,3 +102,5 @@ pred Commit[repo: Repo, b: Branch, newC: CommitNode] {
 run CheckInit {
     Init and WellformedRepo
 }
+
+// design check: where do we call branching in the predicates when we run
