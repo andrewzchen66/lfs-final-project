@@ -52,6 +52,7 @@ pred WellformedBranch[b: Branch] {
     }
 }
 
+   
 pred WellformedRepo {
     // Each branch has at least its root commit
     all b: Repo.branches | {
@@ -98,10 +99,10 @@ pred WellformedRepo {
 //     // The new commit is
 // }
 
-run {
-    Init
-    WellformedRepo
-}
+
+
+run { WellformedRepo } for exactly 1 Branch, exactly 1 CommitNode, exactly 1 User 
+
 
 // pred Branch[branchId] {
 
