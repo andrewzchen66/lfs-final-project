@@ -3,12 +3,6 @@
 
 open "sigs.frg"
 
--- constrain Root so that there is no branching (initial state)
-
-
--- valid merge:
--- same # of files and within that, same file ids
-
 // establish the initial state of the repo
 pred Init {
     // there exists a user
@@ -36,8 +30,8 @@ pred Init {
 
 // helper predicate to ensure integrity of repo's DAG structure
 pred Acyclic {
-    all c: CommitNode | {
-        no c in c.^next
+    no c: CommitNode | {
+        c in c.^next
     }
 }
 
@@ -60,36 +54,42 @@ pred WellformedBranch[b: Branch] {
 
 // establish wellformedness for the entire repo
 pred WellformedRepo {
+    all b: Repo.branches | {
+        // all branches are reachable from main branch
+        // b in Repo.mainBranch.^next
+
+        // wellformedness for all branches
+        WellformedBranch[b]
+    }
+
+    // no floating branches
     all b: Branch | {
         b in Repo.branches
     }
+
     all c: CommitNode | {
+        // all commits are accounted for
         c in Repo.totalCommits
+
+        // all commits are reachable from main branch root, no floating commits
+        c in Repo.mainBranch.root.^next
     }
 
-    // DAG constraints at Repo level
-    // - All branch is reachable from main branch
+    // totalCommits accounts for all existing commits
+    Repo.totalCommits = Repo.branches.commits
 
-    // all commits are reachable from main branch root
-
-    all b: Branch | {
-    }
-    WellformedBranch[Repo.mainBranch]
-
-    all c: CommitNode | {
-        -- c is reachable from the mainBranch.root
-    }
 }
 
 -- abstraction: all commits are presumed to be valid, file modification is out of scope
 -- abstraction: concurrent committing modeled through interleaved commits in Forge (any branch modified at a given time)
 // TODO: concurrent commiting-- add set Branches
 // pred Commit[branch: Branch] | {
-//     Wellformed
+//     WellformedRepo
+
 //     one c: CommitNode | {
 //         c' not in branch.commits
+//         c.currentBranch != none
 //     }
-    
 
 //     // Only one new commit
 //     branch.commits in branch.commits'
@@ -98,10 +98,10 @@ pred WellformedRepo {
 //     // The new commit is
 // }
 
-// run {
-//     Init
-//     Commit[]
-// }
+run {
+    Init
+    WellformedRepo
+}
 
 // pred Branch[branchId] {
 
@@ -144,3 +144,6 @@ pred WellformedRepo {
 //         c = c.
 //     }
 // }
+
+-- valid merge:
+-- same # of files and within that, same file ids
