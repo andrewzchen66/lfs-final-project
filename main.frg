@@ -63,9 +63,9 @@ pred WellformedRepo {
     }
 
     // no floating branches
-    all b: Branch | {
-        b in Repo.branches
-    }
+    // all b: Branch | {
+    //     b in Repo.branches
+    // }
 
     all c: CommitNode | {
         // all commits are accounted for
@@ -76,7 +76,7 @@ pred WellformedRepo {
     }
 
     // totalCommits accounts for all existing commits
-    Repo.totalCommits = Repo.branches.commits
+    Repo.branches.commits in Repo.totalCommits
 
 }
 
@@ -98,10 +98,10 @@ pred WellformedRepo {
 //     // The new commit is
 // }
 
-run {
-    Init
-    WellformedRepo
-}
+
+
+run { WellformedRepo } for exactly 1 Branch, exactly 1 CommitNode, exactly 1 User 
+
 
 // pred Branch[branchId] {
 
