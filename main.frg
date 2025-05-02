@@ -1,7 +1,8 @@
 #lang forge/temporal
-// option bitwidth 9
 
 open "sigs.frg"
+
+sig State {}
 
 // establish the initial state of the repo
 pred Init {
@@ -53,7 +54,6 @@ pred WellformedBranch[b: Branch] {
 }
 
 // establish wellformedness for the entire repo
-
 pred WellformedRepo {
     all b: Repo.branches | {
         // wellformedness for all branches
@@ -65,65 +65,94 @@ pred WellformedRepo {
         c in Repo.totalCommits
 
         // all commits are reachable from main branch root, no floating commits
-        c in Repo.mainBranch.root.^next
+        c in Repo.mainBranch.root.*next
     }
 
     // totalCommits accounts for all existing commits
     Repo.branches.commits in Repo.totalCommits
 
-    // Each branch has at least its root commit
+    // each branch has at least its root commit
     all b: Repo.branches | b.root in b.commits
     
-    // All commits in branches are accounted for in totalCommits
+    // all commits in branches are accounted for in totalCommits
     Repo.branches.commits in Repo.totalCommits
     
-    // Commits form a DAG (no cycles)
+    // commits form a DAG (no cycles)
     no c: CommitNode | c in c.^next
     
-    // Each commit (except root) has exactly one parent
+    // each commit (except root) has exactly one parent
     all c: CommitNode - Root | one c.next
     
-    // Branches are properly linked via prev
+    // branches are properly linked via prev
     all b: Repo.branches - Repo.mainBranch | one b.prev
 
-    // No dangling branches (all branches reachable via prev from main)
+    // no dangling branches (all branches reachable via prev from main)
     Repo.branches in Repo.mainBranch.*prev
 
 }
 
 // valid and disjoint commit IDs
-pred validCommitIDs[repo: Repo] {
-    all disj c1, c2: repo.totalCommits | c1.commitID != c2.commitID
+pred validCommitIDs {
+    all disj c1, c2: Repo.totalCommits | c1.commitID != c2.commitID
 }
 
 // valid and disjoint branch IDs
-pred validBranchIDs[repo: Repo] {
-    all disj b1, b2: repo.branches | b1.branchID != b2.branchID
+pred validBranchIDs {
+    all disj b1, b2: Repo.branches | b1.branchID != b2.branchID
 }
 
 
 -- abstraction: all commits are presumed to be valid, file modification is out of scope
 -- abstraction: concurrent committing modeled through interleaved commits in Forge (any branch modified at a given time)
 // TODO: concurrent commiting-- add set Branches
-// pred Commit[branch: Branch] | {
-//     WellformedRepo
+pred Commit[b: Branch] {
+    // repo needs to be wellformed before proceeding
+    WellformedRepo
 
-//     one c: CommitNode | {
-//         c' not in branch.commits
-//         c.currentBranch != none
-//     }
+    // assign a parent node for the incoming commit
+    some parent: CommitNode | {
+        parent in b.commits
+        parent.next = none
 
-//     // Only one new commit
-//     branch.commits in branch.commits'
-//     #{branch.commits'} = #{branch.commits} + 1
+        // account for only a single commit
+        one new: CommitNode | {
+            new not in Repo.totalCommits
 
-//     // The new commit is
-// }
+            // link new commit to chain
+            parent.next' = new
+            new.next' = none
 
+            // assign new commit to correct branch
+            b.commits' = b.commits + new
+            new.currentBranch' = b
 
+            // track commit in total repo commits
+            Repo.totalCommits' = Repo.totalCommits + new
 
-run { WellformedRepo } for exactly 1 Branch, exactly 1 CommitNode, exactly 1 User 
+            // to ensure a valid commit, fileState needs to change
+            new.fileState' != parent.fileState
 
+            // all other commit nodes are untouched
+            all old: CommitNode - new | { old.fileState' = old.fileState }
+
+            // all other branches other than the one that the new node belongs to is unchanged
+            all branches: Branch - b | { branches.commits' = branches.commits }
+        }
+    }
+
+}
+
+// design check: where do we call branching in the predicates when we run
+
+pred testCommitOneNode {
+    Init
+    WellformedRepo
+    validCommitIDs
+    validBranchIDs
+    Commit[Repo.mainBranch]
+}
+
+run testCommitOneNode for exactly 1 Branch, exactly 1 User, 2 CommitNode, 3 Int, exactly 2 State
 
 // pred Branch[branchId] {
 
