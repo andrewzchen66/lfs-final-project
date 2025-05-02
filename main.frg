@@ -90,6 +90,7 @@ pred WellformedRepo {
     // no dangling branches (all branches reachable via prev from main)
     Repo.branches in Repo.mainBranch.*prev
 
+
 }
 
 // valid and disjoint commit IDs
@@ -161,20 +162,46 @@ pred Commit[b: Branch] {
 
 // design check: where do we call branching in the predicates when we run
 
+
+pred Branch[b: Branch, from: Branch] {
+    // pre 
+    WellformedBranch[b]
+    WellformedBranch[from]
+    some from.commits
+    b not in Branch
+    b.branchID not from.branchID
+
+    some latest: from.commits | {
+        latest.next = none  // must be tip of the branch
+        // set up new branch
+        b.root = latest
+        b.commits = latest
+        b.prev = from
+        
+        // all existing branches remain unchanged
+        all existing: Branch - b | {
+            existing.commits' = existing.commits
+            existing.prev' = existing.prev
+        }
+        
+        // all commits remain unchanged
+        CommitNode' = CommitNode
+        all c: CommitNode | {
+            c.next' = c.next
+            c.fileState' = c.fileState
+        }
+    }
+}
+
 pred testCommitOneNode {
     Init
     WellformedRepo
     validCommitIDs
     validBranchIDs
-    Commit[Repo.mainBranch]
+    // Commit[Repo.mainBranch]
 }
 
 run testCommitOneNode for exactly 1 Branch, exactly 1 User, 2 CommitNode, 3 Int
-
-// pred Branch[branchId] {
-
-//     Commit[b1, b2: Branch]
-// }
 
 // pred Merge[featureBranch, destinationBranch: Int] {
 
