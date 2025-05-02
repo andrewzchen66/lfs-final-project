@@ -150,6 +150,7 @@ pred Branch[b: Branch, from: Branch] {
     // pre 
     WellformedBranch[b]
     WellformedBranch[from]
+
     some from.commits
     b not in Branch
     b.branchID not from.branchID
