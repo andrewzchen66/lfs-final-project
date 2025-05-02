@@ -1,6 +1,9 @@
 #lang forge/temporal
 // option bitwidth 9
 
+option max_tracelength 2
+option min_tracelength 2
+
 sig User {}
 
 var sig Branch {

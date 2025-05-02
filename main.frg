@@ -1,8 +1,9 @@
 #lang forge/temporal
 
-open "sigs.frg"
+option max_tracelength 2
+option min_tracelength 2
 
-sig State {}
+open "sigs.frg"
 
 // establish the initial state of the repo
 pred Init {
@@ -143,6 +144,22 @@ pred Commit[b: Branch] {
 
 }
 
+// create end condition to eventually reach
+
+// create traces, init, condiitions for the middle, then the end pred
+// conditions in the trace: for x number of commits, the repo is acyclic
+
+// do a revert, push, then a pop
+
+// unit tests for core functions (branching, committing, reverting, etc)
+
+// use preds for proerties of git to prove important parts of git (acyclic, etc)
+
+// at the end, show what we really learned by modeling the system
+
+// focus on presentation!!!
+// prepare to answer any questions, make a readme
+
 // design check: where do we call branching in the predicates when we run
 
 
@@ -185,7 +202,7 @@ pred testCommitOneNode {
     // Commit[Repo.mainBranch]
 }
 
-run testCommitOneNode for exactly 1 Branch, exactly 1 User, 2 CommitNode, 3 Int, exactly 2 State
+run testCommitOneNode for exactly 1 Branch, exactly 1 User, 2 CommitNode, 3 Int
 
 // pred Merge[featureBranch, destinationBranch: Int] {
 
