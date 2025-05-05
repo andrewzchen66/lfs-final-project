@@ -1,9 +1,10 @@
 #lang forge/temporal
 
+open "sigs.frg"
+
 option max_tracelength 2
 option min_tracelength 2
 
-open "sigs.frg"
 
 // establish the initial state of the repo
 pred Init {
@@ -163,7 +164,7 @@ pred Commit[b: Branch] {
 // design check: where do we call branching in the predicates when we run
 
 
-pred Branch[b: Branch, from: Branch] {
+pred Branching[b: Branch, from: Branch] {
     // pre 
     WellformedBranch[b]
     WellformedBranch[from]

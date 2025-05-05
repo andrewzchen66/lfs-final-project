@@ -6,14 +6,14 @@ option min_tracelength 2
 
 sig User {}
 
-var sig Branch {
+sig Branch {
     branchID: one Int,
     root: one Root,
     commits: set CommitNode,
     prev: lone Branch
 }
 
-var sig CommitNode {
+sig CommitNode {
     commitID: one Int,
     currentBranch: one Branch,
     next: lone CommitNode, -- sequential commits
