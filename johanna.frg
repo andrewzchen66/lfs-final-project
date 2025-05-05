@@ -72,7 +72,7 @@ pred doBranch {
                 newBr not in Branch
                 
                 // Calculate next ID safely
-                newBr.branchID' = plus[maxBranchID, 1]
+                newBr.branchID' = maxBranchID + 1
                 
                 newBr.root' = latest
                 newBr.commits' = latest
@@ -106,7 +106,7 @@ pred doCommit {
                 new not in CommitNode
                 
                 // Calculate next ID safely
-                let nextID = plus[maxCommitID, 1] | {
+                let nextID = maxCommitID + 1 | {
                     new.commitID' = nextID
                 }
                 
@@ -115,7 +115,7 @@ pred doCommit {
                 new.next' = none
                 b.commits' = b.commits + new
                 new.currentBranch' = b
-                new.fileState' = plus[parent.fileState, 1]
+                new.fileState' = parent.fileState + 1
                 
                 // Frame conditions
                 all otherB: Branch - b | {
