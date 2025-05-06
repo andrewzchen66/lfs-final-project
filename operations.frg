@@ -5,42 +5,42 @@ open "sigs.frg"
 -- abstraction: all commits are presumed to be valid, file modification is out of scope
 -- abstraction: concurrent committing modeled through interleaved commits in Forge (any branch modified at a given time)
 // TODO: concurrent commiting-- add set Branches
-pred Commit[b: Branch] {
-    // repo needs to be wellformed before proceeding
-    WellformedRepo
+// pred Commit[b: Branch] {
+//     // repo needs to be wellformed before proceeding
+//     WellformedRepo
 
-    // assign a parent node for the incoming commit
-    some parent: CommitNode | {
-        parent in b.commits
-        parent.next = none
+//     // assign a parent node for the incoming commit
+//     some parent: CommitNode | {
+//         parent in b.commits
+//         parent.next = none
 
-        // account for only a single commit
-        one new: CommitNode | {
-            new not in Repo.totalCommits
+//         // account for only a single commit
+//         one new: CommitNode | {
+//             new not in Repo.totalCommits
 
-            // link new commit to chain
-            parent.next' = new
-            new.next' = none
+//             // link new commit to chain
+//             parent.next' = new
+//             new.next' = none
 
-            // assign new commit to correct branch
-            b.commits' = b.commits + new
-            new.currentBranch' = b
+//             // assign new commit to correct branch
+//             b.commits' = b.commits + new
+//             new.currentBranch' = b
 
-            // track commit in total repo commits
-            Repo.totalCommits' = Repo.totalCommits + new
+//             // track commit in total repo commits
+//             Repo.totalCommits' = Repo.totalCommits + new
 
-            // to ensure a valid commit, fileState needs to change
-            new.fileState' != parent.fileState
+//             // to ensure a valid commit, fileState needs to change
+//             new.fileState' != parent.fileState
 
-            // all other commit nodes are untouched
-            all old: CommitNode - new | { old.fileState' = old.fileState }
+//             // all other commit nodes are untouched
+//             all old: CommitNode - new | { old.fileState' = old.fileState }
 
-            // all other branches other than the one that the new node belongs to is unchanged
-            all branches: Branch - b | { branches.commits' = branches.commits }
-        }
-    }
+//             // all other branches other than the one that the new node belongs to is unchanged
+//             all branches: Branch - b | { branches.commits' = branches.commits }
+//         }
+//     }
 
-}
+// }
 
 
 // create end condition to eventually reach
@@ -97,6 +97,52 @@ pred Revert[b: Branch, commitId: Int] {
 
 }
 
-pred Merge[featureBranch, destinationBranch: Int] {
+// both branches 
+pred Merge[featureBranch, destinationBranch: Branch] {
+    // both branches must be well-formed and distinct before merging
+    featureBranch != destinationBranch
+    WellformedBranch[featureBranch]
+    WellformedBranch[destinationBranch]
+
+    // find the tips of both branches
+    some featureTip: CommitNode | {
+        featureTip in featureBranch.commits
+        featureTip.next = none
+    }
+    some destinationTip : CommitNode | {
+        destinationTip in destinationBranch.commits
+        destinationTip.next = none
+    }
+
+    // create a single new commit merge off destination branch
+    one new: CommitNode | {
+        new not in Repo.totalCommits
+
+        // both parents/tips point to new commit
+        featureTip.next' = new
+        destinationTip.next' = new
+
+        // ensure new commmit is the latest leaf node off the destination branch
+        new.next' = none
+        new.currentBranch' = destinationBranch
+        destinationBranch.commits' = destinationBranch.commits + new
+
+        // record new commit in total commits
+        Repo.totalCommits' = Repo.totalCommits + new
+
+        // ensure commit is valid by checking filestates
+        new.fileState' != destinationTip.fileState
+        new.fileState' != featureTiip.fileState
+
+        // all other old commits and branches are untouched
+        all oldCommits: CommitNode - new | {
+            oldCommits.fileState' = oldCommit.fileState
+        }
+
+        all oldBranches: Branch - destinationBranch | {
+            oldBranches.commits' = oldBranches.commits
+        }
+    }
+
 
 }

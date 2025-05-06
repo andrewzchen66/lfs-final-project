@@ -6,25 +6,15 @@ open "operations.frg"
 option max_tracelength 2
 option min_tracelength 2
 
+pred testCommitOneNode {
+    Init
+    WellformedRepo
+    //Commit[Repo.mainBranch]
+    
+}
 
+run testCommitOneNode for exactly 1 Branch, exactly 1 User, 2 CommitNode, 3 Int
 
-// pred testCommitOneNode {
-//     Init
-//     WellformedRepo
-//     validCommitIDs
-//     validBranchIDs
-//     Commit[Repo.mainBranch]
-// }
-
-// run testCommitOneNode for exactly 1 Branch, exactly 1 User, 2 CommitNode, 3 Int
-
-// pred Merge[featureBranch, destinationBranch: Int] {
-
-// }
-
-// pred Revert[commitId: Int] {
-
-// }
 
 -- valid commit: 
 -- 1) deletion: keep track of set of files, if missing a file (size of set), then commit is valid
