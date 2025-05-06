@@ -4,7 +4,6 @@
 option max_tracelength 2
 option min_tracelength 2
 
-sig User {}
 
 sig Branch {
     branchID: one Int,
@@ -24,7 +23,6 @@ sig CommitNode {
 one sig Root extends CommitNode {}
 
 one sig Repo {
-    user: one User,
     mainBranch: one Branch,
     branches: set Branch,
     totalCommits: set CommitNode

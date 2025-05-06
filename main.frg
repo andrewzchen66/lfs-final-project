@@ -1,7 +1,7 @@
 #lang forge/temporal
 
 open "sigs.frg"
-open "operations.frg"
+// open "operations.frg"
 
 option max_tracelength 2
 option min_tracelength 2
@@ -9,9 +9,6 @@ option min_tracelength 2
 
 // establish the initial state of the repo
 pred Init {
-    // there exists a user
-    Repo.user != none
-
     // main branch exists alone in repo
     Repo.mainBranch in Repo.branches
     Repo.branches = Repo.mainBranch
@@ -111,10 +108,10 @@ pred testCommitOneNode {
     WellformedRepo
     validCommitIDs
     validBranchIDs
-    Commit[Repo.mainBranch]
+    // Commit[Repo.mainBranch]
 }
 
-run testCommitOneNode for exactly 1 Branch, exactly 1 User, 2 CommitNode, 3 Int
+run testCommitOneNode for exactly 1 Branch, 2 CommitNode, 3 Int
 
 // pred Merge[featureBranch, destinationBranch: Int] {
 
