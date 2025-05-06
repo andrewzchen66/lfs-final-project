@@ -30,13 +30,13 @@ pred twoStepTrace {
     Init
     WellformedRepo
     some b1: Branch |
-      Commit[b1] or Branching[b1, Repo.mainBranch]
+        Branching[b1, Repo.mainBranch] //or Commit[b1]
     some b2: Branch |
-      Commit[b2] or Branching[b2, Repo.mainBranch] //or Merge[b2, Repo.mainBranch] or Revert[b2]
+        Branching[b2, Repo.mainBranch] //or Commit[b2] or Merge[b2, Repo.mainBranch] or Revert[b2]
 }
 
 test suite for PostOperationInvariants {
-    assert { twoStepTrace and PostOperationInvariants } is necessary for PostOperationInvariants
+    assert { twoStepTrace } is sufficient for PostOperationInvariants
 }
 
 

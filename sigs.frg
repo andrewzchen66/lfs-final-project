@@ -7,14 +7,14 @@ option min_tracelength 2
 sig User {}
 
 sig Branch {
-    branchID: one Int,
-    root: one Root,
+    var branchID: one Int,
+    var root: one Root,
     var commits: set CommitNode,
-    prev: lone Branch
+    var prev: lone Branch
 }
 
-sig CommitNode {
-    commitID: one Int,
+var sig CommitNode {
+    var commitID: one Int,
     var currentBranch: one Branch,
     var next: lone CommitNode, -- sequential commits
     var commitBranches: set Branch,
@@ -24,8 +24,8 @@ sig CommitNode {
 one sig Root extends CommitNode {}
 
 one sig Repo {
-    user: one User,
-    mainBranch: one Branch,
+    var user: one User,
+    var mainBranch: one Branch,
     var branches: set Branch,
     var totalCommits: set CommitNode
 }

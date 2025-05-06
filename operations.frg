@@ -5,42 +5,42 @@ open "sigs.frg"
 -- abstraction: all commits are presumed to be valid, file modification is out of scope
 -- abstraction: concurrent committing modeled through interleaved commits in Forge (any branch modified at a given time)
 // TODO: concurrent commiting-- add set Branches
-pred Commit[b: Branch] {
-    // repo needs to be wellformed before proceeding
-    //WellformedRepo
+// pred Commit[b: Branch] {
+//     // repo needs to be wellformed before proceeding
+//     //WellformedRepo
 
-    // assign a parent node for the incoming commit
-    some parent: CommitNode | {
-        parent in b.commits
-        parent.next = none
+//     // assign a parent node for the incoming commit
+//     some parent: CommitNode | {
+//         parent in b.commits
+//         parent.next = none
 
-        // account for only a single commit
-        one new: CommitNode | {
-            new not in Repo.totalCommits
+//         // account for only a single commit
+//         one new: CommitNode | {
+//             new not in Repo.totalCommits
 
-            // link new commit to chain
-            parent.next' = new
-            new.next' = none
+//             // link new commit to chain
+//             parent.next' = new
+//             new.next' = none
 
-            // assign new commit to correct branch
-            b.commits' = b.commits + new
-            new.currentBranch' = b
+//             // assign new commit to correct branch
+//             b.commits' = b.commits + new
+//             new.currentBranch' = b
 
-            // track commit in total repo commits
-            Repo.totalCommits' = Repo.totalCommits + new
+//             // track commit in total repo commits
+//             Repo.totalCommits' = Repo.totalCommits + new
 
-            // to ensure a valid commit, fileState needs to change
-            new.fileState' != parent.fileState
+//             // to ensure a valid commit, fileState needs to change
+//             new.fileState' != parent.fileState
 
-            // all other commit nodes are untouched
-            all old: CommitNode - new | { old.fileState' = old.fileState }
+//             // all other commit nodes are untouched
+//             all old: CommitNode - new | { old.fileState' = old.fileState }
 
-            // all other branches other than the one that the new node belongs to is unchanged
-            all branches: Branch - b | { branches.commits' = branches.commits }
-        }
-    }
+//             // all other branches other than the one that the new node belongs to is unchanged
+//             all branches: Branch - b | { branches.commits' = branches.commits }
+//         }
+//     }
 
-}
+// }
 
 
 // create end condition to eventually reach
@@ -68,7 +68,7 @@ pred Branching[b: Branch, from: Branch] {
 
     some from.commits
     b not in Branch
-    b.branchID not from.branchID
+    b.branchID != from.branchID
 
     some latest: from.commits | {
         latest.next = none  // must be tip of the branch
