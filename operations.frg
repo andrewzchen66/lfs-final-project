@@ -1,3 +1,5 @@
+#lang forge/temporal
+
 open "sigs.frg"
 
 -- abstraction: all commits are presumed to be valid, file modification is out of scope
