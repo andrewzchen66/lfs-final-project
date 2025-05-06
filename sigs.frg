@@ -9,16 +9,16 @@ sig User {}
 sig Branch {
     branchID: one Int,
     root: one Root,
-    commits: set CommitNode,
+    var commits: set CommitNode,
     prev: lone Branch
 }
 
 sig CommitNode {
     commitID: one Int,
-    currentBranch: one Branch,
-    next: lone CommitNode, -- sequential commits
-    commitBranches: set Branch,
-    fileState: one Int -- unique identifier for each file state
+    var currentBranch: one Branch,
+    var next: lone CommitNode, -- sequential commits
+    var commitBranches: set Branch,
+    var fileState: one Int -- unique identifier for each file state
 }
 
 one sig Root extends CommitNode {}
@@ -26,8 +26,8 @@ one sig Root extends CommitNode {}
 one sig Repo {
     user: one User,
     mainBranch: one Branch,
-    branches: set Branch,
-    totalCommits: set CommitNode
+    var branches: set Branch,
+    var totalCommits: set CommitNode
 }
 
 
@@ -69,14 +69,31 @@ pred Acyclic {
     }
 }
 
+// should not be sat
+pred Cyclic {
+    some c: CommitNode | {
+        c in c.^next
+    }
+}
+
 // valid and disjoint commit IDs
 pred UniqueCommitIDs {
     all disj c1, c2: Repo.totalCommits | c1.commitID != c2.commitID
 }
 
+// should not be sat, there exists at least two different commit nodes with the same commmit IDs
+pred NonUniqueCommitIDs {
+    some disj c1, c2: Repo.totalCommits | c1.commitID = c2.commitID
+}
+
 // valid and disjoint branch IDs
 pred UniqueBranchIDs {
     all disj b1, b2: Repo.branches | b1.branchID != b2.branchID
+}
+
+// should not be sat, there exists at least two different branches with the same branch IDs
+pred NonUniqueBranchIDs {
+    some disj b1, b2: Repo.branches | b1.branchID = b2.branchID
 }
 
 // all commit nodes are reachable from the main node and are accounted for
@@ -86,9 +103,23 @@ pred Reachable {
     }
 }
 
+// should not be sat
+pred NotReachable { 
+    some c: CommitNode | {
+        c not in Repo.mainBranch.root.*next
+    }
+}
+
 // root commit has no parents, ensuring its root properties
 pred RootNoParents {
     no c: CommitNode | {
+        Repo.mainBranch.root in c.next
+    }
+}
+
+// should not be sat, root commit is not actually the root commit and has parents
+pred RootWithParents {
+    some c: CommitNode | {
         Repo.mainBranch.root in c.next
     }
 }
@@ -104,11 +135,30 @@ pred ImmutableIDs {
     }
 }
 
+// should not be sat, existing ids could change across operations, interrupting the integrity of commit history
+pred MutableIDs {
+    some c: CommitNode | {
+        c.commitID' != c.commitID
+    }
+
+    some b: Branch | {
+        b.branchID' != b.branchID
+    }
+}
+
 
 // integrity of commit history is maintained: no commit deletion allowed
 pred NoCommitDeletion {
     all c: CommitNode | {
         c in Repo.totalCommits implies c in Repo.totalCommits'
+    }
+}
+
+// should not be say, again, the integrity of the commit history is compronised b/c commit deletion is allowed
+pred CommitDeletionAllowed {
+    some c: CommitNode | {
+        c in Repo.totalCommits
+        c not in Repo.totalCommits'
     }
 }
 
@@ -119,7 +169,6 @@ pred Invariants {
     UniqueBranchIDs
     Reachable
     RootNoParents
-    
 }
 
 // git invariants that must hold after an operation (commit, branch, merge or revert)
@@ -183,7 +232,6 @@ pred WellformedRepo {
 
     // no dangling branches (all branches reachable via prev from main)
     Repo.branches in Repo.mainBranch.*prev
-
 
 }
 

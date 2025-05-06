@@ -9,7 +9,7 @@ option min_tracelength 2
 pred testCommitOneNode {
     Init
     WellformedRepo
-    //Commit[Repo.mainBranch]
+    Commit[Repo.mainBranch]
     
 }
 
