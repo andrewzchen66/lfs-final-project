@@ -104,11 +104,22 @@ pred validBranchIDs {
 
 
 pred testCommitOneNode {
-    Init
-    WellformedRepo
-    validCommitIDs
-    validBranchIDs
+    // Init
+    // WellformedRepo
+    // validCommitIDs
+    // validBranchIDs
     // Commit[Repo.mainBranch]
+
+    Init
+    always{
+        WellformedRepo
+        // Commit[Repo.mainBranch]
+        validCommitIDs
+        validBranchIDs
+    }
+    // eventually {
+    //     Commit[Repo.mainBranch]
+    // }
 }
 
 run testCommitOneNode for exactly 1 Branch, 2 CommitNode, 3 Int
