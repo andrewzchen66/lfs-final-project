@@ -1,8 +1,8 @@
 #lang forge/temporal
 open "sigs-other.frg"
 
-option min_tracelength 4
-option max_tracelength 4
+option min_tracelength 2
+option max_tracelength 2
 
 
 
@@ -27,7 +27,7 @@ pred Acyclic {
     no c: CommitNode | {
         c in c.^next
         // TODO: what is the correct way to implement reachable over two fields, one of them being a set?
-        reachable[c, c, next, outgoingBranches]
+        // reachable[c, c, next, outgoingBranches]
     }
 
     all c: CommitNode | {
@@ -39,12 +39,22 @@ pred Acyclic {
 
 // establish wellformedness for all branches, or if all commits stem linearly from the root
 pred WellformedBranch[r: Root] {
+    // For now, we only allow branching off of main branch
+
+    // (r = Repo.firstRoot) or (some parent: CommitNode | {
+    //     parent in Repo.firstRoot.*next
+    //     r.prevBranchNode = parent
+    // })
+
+
     // confirm DAG structure
     Acyclic
 
     // branch is reflected in Repo fields
     r in Repo.totalCommits
 
+    // First Root stays the same
+    Repo.firstRoot = Repo.firstRoot'
     
     no otherRoot: Root | {
         // Only one root allowed for this branch
@@ -73,9 +83,10 @@ pred WellformedRepo {
         // If commit in Repo
         c in Repo.totalCommits => {
             // 1) commitNode's states remain same
+            c.fileState != none
             c.fileState = c.fileState'
             // c.next != none => c.next = c.next'
-            c.outgoingBranches = c.outgoingBranches'
+            // c.outgoingBranches = c.outgoingBranches'
 
             // 2) The commit will always be in use
             c in Repo.totalCommits'
@@ -106,9 +117,15 @@ pred WellformedRepo {
 
             // All non-firstRoots are all properly linked to a different CommitNode
             r != Repo.firstRoot => {
+                // TODO: For now, only branch off main branch
+                r.prevBranchNode in Repo.firstRoot.*next
                 r.prevBranchNode in Repo.totalCommits
                 r in r.prevBranchNode.outgoingBranches
             }
+        }
+
+        r in Unused.unusedCommits => {
+            r.prevBranchNode = none
         }
     }
 
@@ -182,31 +199,60 @@ pred Commit2 {
     }
 }
 
-// pred Branching[c: CommitNode] {
-//     // Move a CommitNode from Unused to Repo.totalCommits
-//     Unused.unusedCommits' in Unused.unusedCommits
-//     Repo.totalCommits in Repo.totalCommits'
-//     #{Unused.unusedCommits - Unused.unusedCommits'} = 1
-//     Unused.unusedCommits - Unused.unusedCommits' = Repo.totalCommits' - Repo.totalCommits
+pred Branching[r: Root] {
+    // Move a CommitNode from Unused to Repo.totalCommits
+    Unused.unusedCommits' in Unused.unusedCommits
+    Repo.totalCommits in Repo.totalCommits'
+    #{Unused.unusedCommits - Unused.unusedCommits'} = 1
+    Unused.unusedCommits - Unused.unusedCommits' = Repo.totalCommits' - Repo.totalCommits
+    
+    // Add new branching CommitNode to the most recent CommitNode
+    // let newRoot = Unused.unusedCommits - Unused.unusedCommits' | {
+
+    // } 
+    
+    one newRoot: Root | {
+        newRoot = Unused.unusedCommits - Unused.unusedCommits'
+        some c: Repo.totalCommits | {
+            // c is the origin of the new branch
+            (c in r.*next and c.next = none)
+            c.outgoingBranches' = c.outgoingBranches + newRoot
+
+            newRoot.next' = none
+            newRoot.outgoingBranches' = none
+            newRoot.fileState' = c.fileState // New root commit has same fileState as parent
+            newRoot.prevBranchNode' = c // point prevBranchNode to parent CommitNode
+        }
+    }
+
+    all c: Repo.totalCommits | {
+        not (c in r.*next and c.next = none) => {
+            c.next' = c.next
+            c.outgoingBranches = c.outgoingBranches'
+            c.fileState = c.fileState'
+        }
+    }
     
 
-//     // Update CommitNode fields
-//     all c: Repo.totalCommits | {
-//         (c in r.*next and c.next = none) => {
-//             // c is the parent of the new commit
-//             c.next' = (Unused.unusedCommits - Unused.unusedCommits')
-//             c.next'.next' = none
-//             c.next'.outgoingBranches' = none
-//             c.next'.fileState' != none
-//             c.next'.fileState' != c.fileState // New commit has different fileState than parent
-//         } else {
-//             // All other states' field should remain the same
-//             c.next = c.next'
-//             c.outgoingBranches = c.outgoingBranches'
-//             c.fileState = c.fileState'
-//         }
-//     }
-// }
+    // ________________________________________________________________
+
+    // // Update CommitNode fields
+    // all c: Repo.totalCommits | {
+    //     (c in r.*next and c.next = none) => {
+    //         // c is the parent of the new commit
+    //         c.next' = (Unused.unusedCommits - Unused.unusedCommits')
+    //         c.next'.next' = none
+    //         c.next'.outgoingBranches' = none
+    //         c.next'.fileState' != none
+    //         c.next'.fileState' != c.fileState // New commit has different fileState than parent
+    //     } else {
+    //         // All other states' field should remain the same
+    //         c.next = c.next'
+    //         c.outgoingBranches = c.outgoingBranches'
+    //         c.fileState = c.fileState'
+    //     }
+    // }
+}
 
 
 pred testCommitOneNode {
@@ -230,7 +276,7 @@ pred testCommitOneNode {
     // always Commit[Repo.firstRoot] until #{Unused.unusedCommits} = 0
 }
 
-// 3) Get rid of all parameters in the operations. For example Commit predicate would just ensure that at this timestep a commit somewhere would happen, so our run would call something like:
+// Get rid of all parameters in the operations. For example Commit predicate would just ensure that at this timestep a commit somewhere would happen, so our run would call something like:
 // pred genericTest {
 //     Init
 //     always{
@@ -240,11 +286,24 @@ pred testCommitOneNode {
 // }
 
 // This would align more with how we did the goats_and_wolves.frg assignment
-
-run testCommitOneNode for exactly 4 CommitNode, 5 Int
-
+// run testCommitOneNode for exactly 4 CommitNode, 5 Int
 
 
+pred testBranchOneNode {
+    Init
+    always{
+        WellformedRepo
+        // Commit2
+        // Commit[Repo.firstRoot]
+    }
+    // Commit
+    eventually {
+        Branching[Repo.firstRoot]
+        // Commit2
+    }
+}
+
+run testBranchOneNode for exactly 4 CommitNode, exactly 2 Root, 5 Int
 
 
 

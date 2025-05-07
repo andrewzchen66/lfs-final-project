@@ -1,7 +1,7 @@
 #lang forge/temporal
 
+open "operations.frg"
 open "sigs.frg"
-// open "operations.frg"
 
 option max_tracelength 2
 option min_tracelength 2
@@ -117,9 +117,9 @@ pred testCommitOneNode {
         validCommitIDs
         validBranchIDs
     }
-    // eventually {
-    //     Commit[Repo.mainBranch]
-    // }
+    eventually {
+        Commit[Repo.mainBranch]
+    }
 }
 
 run testCommitOneNode for exactly 1 Branch, 2 CommitNode, 3 Int

@@ -94,7 +94,7 @@ pred Branching[b: Branch, from: Branch] {
 
 // When you run git revert <commit>, Git creates a new commit that inverts the changes introduced by <commit>—without altering history (unlike reset). It does so by computing a patch that undoes the diff introduced by the target commit.
 // pred Revert[b: Branch, commitId: Int] {
-
+    
 // }
 
 // pred Merge[featureBranch, destinationBranch: Int] {
