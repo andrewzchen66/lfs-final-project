@@ -1,8 +1,8 @@
 #lang forge/temporal
 open "sigs-other.frg"
 
-option min_tracelength 2
-option max_tracelength 2
+option min_tracelength 4
+option max_tracelength 4
 
 
 
@@ -73,8 +73,9 @@ pred WellformedRepo {
         // If commit in Repo
         c in Repo.totalCommits => {
             // 1) commitNode's states remain same
-            // c.fileState = c.fileState'
+            c.fileState = c.fileState'
             // c.next != none => c.next = c.next'
+            c.outgoingBranches = c.outgoingBranches'
 
             // 2) The commit will always be in use
             c in Repo.totalCommits'
@@ -124,40 +125,123 @@ pred Commit[r: Root] {
     #{Unused.unusedCommits - Unused.unusedCommits'} = 1
     Unused.unusedCommits - Unused.unusedCommits' = Repo.totalCommits' - Repo.totalCommits
 
-    // 
+    // Add new CommitNode to the most recent CommitNode
+    some c: Repo.totalCommits | {
+        // c is the parent of the new commit
+        (c in r.*next and c.next = none)
+        c.next' = (Unused.unusedCommits - Unused.unusedCommits')
+        c.next'.next' = none
+        c.next'.outgoingBranches' = none
+        c.next'.fileState' != none
+        c.next'.fileState' != c.fileState // New commit has different fileState than parent
+    }
+
+    // All other CommitNodes' fields should remain the same
     all c: Repo.totalCommits | {
-        (c in r.*next and c.next = none) => {
-            // c is the parent of the new commit
-            c.next' = (Unused.unusedCommits - Unused.unusedCommits')
-            c.next'.next' = none
-            c.next'.outgoingBranches' = none
-            c.next'.fileState' != none
-            c.next'.fileState' != c.fileState // New commit has different fileState than parent
-        } else {
-            // All states' next field should remain the same
-            c.next = c.next'
+        not (c in r.*next and c.next = none) => {
+            c.next' = c.next
             c.outgoingBranches = c.outgoingBranches'
             c.fileState = c.fileState'
+        }
+
+        // every active commit stays in totalCommits
+        c in Repo.totalCommits'
+    }
+}
+
+
+pred Commit2 {
+    
+    // // Move a CommitNode from Unused to Repo.totalCommits
+    Unused.unusedCommits' in Unused.unusedCommits
+    Repo.totalCommits in Repo.totalCommits'
+    #{Unused.unusedCommits - Unused.unusedCommits'} = 1
+    Unused.unusedCommits - Unused.unusedCommits' = Repo.totalCommits' - Repo.totalCommits
+
+    // Add new CommitNode to the most recent CommitNode
+    one parent: Repo.totalCommits | {
+        // c is the parent of the new commit
+        (parent.next = none)
+        parent.next' = (Unused.unusedCommits - Unused.unusedCommits')
+        parent.next'.next' = none
+        parent.next'.outgoingBranches' = none
+        parent.next'.fileState' != none
+        parent.next'.fileState' != parent.fileState // New commit has different fileState than parent
+
+        // All other CommitNodes' fields should remain the same
+        all c: Repo.totalCommits | {
+            (c != parent) => {
+                c.next' = c.next
+                c.outgoingBranches = c.outgoingBranches'
+                c.fileState = c.fileState'
+            }
+
+            // every active commit stays in totalCommits
+            c in Repo.totalCommits'
         }
     }
 }
 
+// pred Branching[c: CommitNode] {
+//     // Move a CommitNode from Unused to Repo.totalCommits
+//     Unused.unusedCommits' in Unused.unusedCommits
+//     Repo.totalCommits in Repo.totalCommits'
+//     #{Unused.unusedCommits - Unused.unusedCommits'} = 1
+//     Unused.unusedCommits - Unused.unusedCommits' = Repo.totalCommits' - Repo.totalCommits
+    
+
+//     // Update CommitNode fields
+//     all c: Repo.totalCommits | {
+//         (c in r.*next and c.next = none) => {
+//             // c is the parent of the new commit
+//             c.next' = (Unused.unusedCommits - Unused.unusedCommits')
+//             c.next'.next' = none
+//             c.next'.outgoingBranches' = none
+//             c.next'.fileState' != none
+//             c.next'.fileState' != c.fileState // New commit has different fileState than parent
+//         } else {
+//             // All other states' field should remain the same
+//             c.next = c.next'
+//             c.outgoingBranches = c.outgoingBranches'
+//             c.fileState = c.fileState'
+//         }
+//     }
+// }
 
 
 pred testCommitOneNode {
     Init
     always{
         WellformedRepo
+        // Commit2
         // Commit[Repo.firstRoot]
-        // validCommitIDs
-        // validBranchIDs
     }
+    // Commit
     eventually {
         Commit[Repo.firstRoot]
+        // Commit2
     }
+
+    //     #{Unused.unusedCommits} = 0
+    // }
+    // Commit[Repo.firstRoot]
+    // Commit[Repo.firstRoot]
+
+    // always Commit[Repo.firstRoot] until #{Unused.unusedCommits} = 0
 }
 
-run testCommitOneNode for exactly 5 CommitNode, 5 Int
+// 3) Get rid of all parameters in the operations. For example Commit predicate would just ensure that at this timestep a commit somewhere would happen, so our run would call something like:
+// pred genericTest {
+//     Init
+//     always{
+//         WellformedRepo
+//         Commit or Branch or Merge or …
+//     }
+// }
+
+// This would align more with how we did the goats_and_wolves.frg assignment
+
+run testCommitOneNode for exactly 4 CommitNode, 5 Int
 
 
 
