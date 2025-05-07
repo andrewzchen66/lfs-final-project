@@ -1,8 +1,8 @@
 #lang forge/temporal
 open "sigs-other.frg"
 
-option min_tracelength 2
-option max_tracelength 2
+option min_tracelength 5
+option max_tracelength 5
 
 
 
@@ -132,16 +132,20 @@ pred WellformedRepo {
     Repo.firstRoot.prevBranchNode = none
 }
 
--- abstraction: all commits are presumed to be valid, file modification is out of scope
--- abstraction: concurrent committing modeled through interleaved commits in Forge (any branch modified at a given time)
-// TODO: concurrent commiting-- add set Branches
-pred Commit[r: Root] {
-    // Move a CommitNode from Unused to Repo.totalCommits
+// Move a CommitNode from Unused to Repo.totalCommits
+pred AddOneCommitNode {
     Unused.unusedCommits' in Unused.unusedCommits
     Repo.totalCommits in Repo.totalCommits'
     #{Unused.unusedCommits - Unused.unusedCommits'} = 1
     Unused.unusedCommits - Unused.unusedCommits' = Repo.totalCommits' - Repo.totalCommits
+}
 
+-- abstraction: all commits are presumed to be valid, file modification is out of scope
+-- abstraction: concurrent committing modeled through interleaved commits in Forge (any branch modified at a given time)
+// TODO: concurrent commiting-- add set Branches
+pred Commit[r: Root] {
+    AddOneCommitNode
+    
     // Add new CommitNode to the most recent CommitNode
     some c: Repo.totalCommits | {
         // c is the parent of the new commit
@@ -169,11 +173,7 @@ pred Commit[r: Root] {
 
 pred Commit2 {
     
-    // // Move a CommitNode from Unused to Repo.totalCommits
-    Unused.unusedCommits' in Unused.unusedCommits
-    Repo.totalCommits in Repo.totalCommits'
-    #{Unused.unusedCommits - Unused.unusedCommits'} = 1
-    Unused.unusedCommits - Unused.unusedCommits' = Repo.totalCommits' - Repo.totalCommits
+    AddOneCommitNode
 
     // Add new CommitNode to the most recent CommitNode
     one parent: Repo.totalCommits | {
@@ -200,11 +200,7 @@ pred Commit2 {
 }
 
 pred Branching[r: Root] {
-    // Move a CommitNode from Unused to Repo.totalCommits
-    Unused.unusedCommits' in Unused.unusedCommits
-    Repo.totalCommits in Repo.totalCommits'
-    #{Unused.unusedCommits - Unused.unusedCommits'} = 1
-    Unused.unusedCommits - Unused.unusedCommits' = Repo.totalCommits' - Repo.totalCommits
+    AddOneCommitNode
     
     // Add new branching CommitNode to the most recent CommitNode
     // let newRoot = Unused.unusedCommits - Unused.unusedCommits' | {
@@ -213,7 +209,7 @@ pred Branching[r: Root] {
     
     one newRoot: Root | {
         newRoot = Unused.unusedCommits - Unused.unusedCommits'
-        some c: Repo.totalCommits | {
+        one c: Repo.totalCommits | {
             // c is the origin of the new branch
             (c in r.*next and c.next = none)
             c.outgoingBranches' = c.outgoingBranches + newRoot
@@ -254,27 +250,48 @@ pred Branching[r: Root] {
     // }
 }
 
+// NOTE: In our merge, we override parent branch's filestate with our merged branch's fileState
+pred Merge[parentCommit: CommitNode] {
+    
+    AddOneCommitNode
 
-pred testCommitOneNode {
-    Init
-    always{
-        WellformedRepo
-        // Commit2
-        // Commit[Repo.firstRoot]
+    one newCommit: CommitNode | { // The new Commit we are adding after Merge
+        newCommit = Unused.unusedCommits - Unused.unusedCommits'
+        newCommit.next' = none
+        newCommit.outgoingBranches' = none
+
+        one targetCommit: CommitNode | { // The Commit we are merging into
+            (targetCommit in parentCommit.*next and targetCommit.next = none)
+            targetCommit.next' = newCommit // Point to newCommit!
+            targetCommit.outgoingBranches' = targetCommit.outgoingBranches
+            targetCommit.fileState' = targetCommit.fileState
+
+            one rootToMerge: parentCommit.outgoingBranches | { // The root that we're merging into
+                // Keep all rootToMerge fields the same
+                one commitToMerge: Repo.totalCommits | { // commit that we are merging
+                    (commitToMerge in rootToMerge.*next and commitToMerge.next = none)
+                    commitToMerge.next' = newCommit // Point to newCommit!
+                    commitToMerge.outgoingBranches' = commitToMerge.outgoingBranches
+                    commitToMerge.fileState' = commitToMerge.fileState
+
+                    // Override newCommit's fileState with the merged Commit's filestate
+                    newCommit.fileState' = commitToMerge.fileState 
+
+                    // Keep OtherCommits the same
+                    all c: Repo.totalCommits | {
+                        not (c = newCommit or c = targetCommit or c = commitToMerge) => {
+                            c.next' = c.next
+                            c.outgoingBranches = c.outgoingBranches'
+                            c.fileState = c.fileState'
+                        }
+                    }
+                }
+            }
+        }
     }
-    // Commit
-    eventually {
-        Commit[Repo.firstRoot]
-        // Commit2
-    }
-
-    //     #{Unused.unusedCommits} = 0
-    // }
-    // Commit[Repo.firstRoot]
-    // Commit[Repo.firstRoot]
-
-    // always Commit[Repo.firstRoot] until #{Unused.unusedCommits} = 0
+    
 }
+
 
 // Get rid of all parameters in the operations. For example Commit predicate would just ensure that at this timestep a commit somewhere would happen, so our run would call something like:
 // pred genericTest {
@@ -286,6 +303,17 @@ pred testCommitOneNode {
 // }
 
 // This would align more with how we did the goats_and_wolves.frg assignment
+
+pred testCommitOneNode {
+    Init
+    always{
+        WellformedRepo
+        // Commit2
+        // Commit[Repo.firstRoot]
+    }
+    Commit[Repo.firstRoot]
+    // Commit2
+}
 // run testCommitOneNode for exactly 4 CommitNode, 5 Int
 
 
@@ -303,8 +331,45 @@ pred testBranchOneNode {
     }
 }
 
-run testBranchOneNode for exactly 4 CommitNode, exactly 2 Root, 5 Int
+// run testBranchOneNode for exactly 4 CommitNode, exactly 2 Root, 5 Int
 
+pred testBranch3 {
+    Init
+    always{
+        WellformedRepo
+    }
+    // Commit
+    Branching[Repo.firstRoot]
+    next_state Branching[Repo.firstRoot]
+    next_state next_state Branching[Repo.firstRoot]
+
+}
+// run testBranch3 for exactly 4 CommitNode, exactly 4 Root, 5 Int
+
+pred testBranchMerge {
+    Init
+    always {
+        WellformedRepo
+    }
+    // Commit
+    Branching[Repo.firstRoot]
+    next_state Merge[Repo.firstRoot]
+}
+
+// run testBranchMerge for exactly 4 CommitNode, exactly 2 Root, 5 Int
+
+
+pred testBranchCommitMerge {
+    Init
+    always {
+        WellformedRepo
+    }
+    // Commit
+    Branching[Repo.firstRoot]
+    next_state Commit[Repo.firstRoot]
+    next_state next_state Merge[Repo.firstRoot]
+}
+run testBranchCommitMerge for exactly 4 CommitNode, exactly 2 Root, 5 Int
 
 
 // pred Merge[featureBranch, destinationBranch: Int] {
