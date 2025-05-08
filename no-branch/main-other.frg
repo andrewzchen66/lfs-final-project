@@ -77,6 +77,7 @@ pred WellformedRepo {
         (c in Repo.totalCommits and c not in Unused.unusedCommits) or (c not in Repo.totalCommits and c in Unused.unusedCommits)
 
         // Reachable from firstRoot means it's in use
+        // TODO: reachable may be auto-evaluating to false, double check this
         reachable[c, Repo.firstRoot, next, outgoingBranches] => (c in Repo.totalCommits and c not in Unused.unusedCommits)
         // not reachable[c, Repo.firstRoot, next, outgoingBranches] => (c not in Repo.totalCommits and c in Unused.unusedCommits)
 
@@ -88,7 +89,7 @@ pred WellformedRepo {
             // c.next != none => c.next = c.next'
             // c.outgoingBranches = c.outgoingBranches'
 
-            // 2) The commit will always be in use
+            // 2) Once a commit has been used, it will always be in use
             c in Repo.totalCommits'
 
             // 3) all commits are reachable from a root; no floating commits
@@ -97,7 +98,7 @@ pred WellformedRepo {
                 c in r.*next
             }
 
-            // 4) Outgoing Branch Roots must all be in 
+            // 4) Outgoing Branch Roots must all be in use
             c.outgoingBranches in Repo.totalCommits
         }
 
@@ -147,32 +148,41 @@ pred Commit[r: Root] {
     AddOneCommitNode
     
     // Add new CommitNode to the most recent CommitNode
-    some c: Repo.totalCommits | {
-        // c is the parent of the new commit
-        (c in r.*next and c.next = none)
-        c.next' = (Unused.unusedCommits - Unused.unusedCommits')
-        c.next'.next' = none
-        c.next'.outgoingBranches' = none
-        c.next'.fileState' != none
-        c.next'.fileState' != c.fileState // New commit has different fileState than parent
-    }
+    some parent: Repo.totalCommits | {
+        // parent is the parent of the new commit
+        (parent in r.*next and parent.next = none)
+        
+        // Update parent.next' to the new commit , keep everything else the same
+        parent.next' = (Unused.unusedCommits - Unused.unusedCommits')
+        parent.outgoingBranches' = parent.outgoingBranches
+        parent.fileState' = parent.fileState
 
-    // All other CommitNodes' fields should remain the same
-    all c: Repo.totalCommits | {
-        not (c in r.*next and c.next = none) => {
-            c.next' = c.next
-            c.outgoingBranches = c.outgoingBranches'
-            c.fileState = c.fileState'
+        // Update New commit's fields
+        parent.next'.next' = none
+        parent.next'.outgoingBranches' = none
+        // New commit has different fileState than any earlier commit in this branch
+        parent.next'.fileState' != none
+        no prevCommit: r.*next | {
+            prevCommit.fileState = parent.next'.fileState'
         }
+        // parent.next'.fileState' != parent.fileState
 
-        // every active commit stays in totalCommits
-        c in Repo.totalCommits'
+        // All other CommitNodes' fields should remain the same
+        all c: Repo.totalCommits | {
+            not (c = parent or c = parent.next') => {
+                c.next' = c.next
+                c.outgoingBranches = c.outgoingBranches'
+                c.fileState = c.fileState'
+            }
+        }
     }
+
 }
 
-
+// A version of Commit I created with no parameters. Kinda works, haven't tested it much. 
+// It just contrains that a single Commit will occur at this timestep, but you have no control on which branch it occurs
+// Probably we can delete
 pred Commit2 {
-    
     AddOneCommitNode
 
     // Add new CommitNode to the most recent CommitNode
@@ -192,9 +202,6 @@ pred Commit2 {
                 c.outgoingBranches = c.outgoingBranches'
                 c.fileState = c.fileState'
             }
-
-            // every active commit stays in totalCommits
-            c in Repo.totalCommits'
         }
     }
 }
@@ -250,7 +257,9 @@ pred Branching[r: Root] {
     // }
 }
 
-// NOTE: In our merge, we override parent branch's filestate with our merged branch's fileState
+// parentCommit is the CommitNode that the branch we want to merge branches off of.
+// We create a new CommitNode that 
+// NOTE: In our merge, we always override target branch's filestate with our to-be-merged branch's fileState
 pred Merge[parentCommit: CommitNode] {
     
     AddOneCommitNode
@@ -293,6 +302,32 @@ pred Merge[parentCommit: CommitNode] {
 }
 
 
+// revertingTo is the CommitNode whose state we want to revert to
+pred Revert[revertingTo: CommitNode] {
+    AddOneCommitNode
+    
+    one parent: Repo.totalCommits | {
+        (parent in revertingTo.*next and parent.next = none)
+        parent.next' = (Unused.unusedCommits - Unused.unusedCommits')
+        parent.outgoingBranches' = parent.outgoingBranches
+        parent.fileState' = parent.fileState
+        
+        parent.next'.next' = none
+        parent.next'.outgoingBranches' = none
+        parent.next'.fileState' = revertingTo.fileState // New commit has the same fileState as revertingTo
+
+        // All other CommitNodes' fields should remain the same
+        all c: Repo.totalCommits | {
+            not (c = parent or c = parent.next') => {
+                c.next' = c.next
+                c.outgoingBranches = c.outgoingBranches'
+                c.fileState = c.fileState'
+            }
+        }
+    }
+}
+
+
 // Get rid of all parameters in the operations. For example Commit predicate would just ensure that at this timestep a commit somewhere would happen, so our run would call something like:
 // pred genericTest {
 //     Init
@@ -308,11 +343,10 @@ pred testCommitOneNode {
     Init
     always{
         WellformedRepo
-        // Commit2
+        // TODO: how come we get Unsat when we try to always Commit?
         // Commit[Repo.firstRoot]
     }
     Commit[Repo.firstRoot]
-    // Commit2
 }
 // run testCommitOneNode for exactly 4 CommitNode, 5 Int
 
@@ -321,13 +355,9 @@ pred testBranchOneNode {
     Init
     always{
         WellformedRepo
-        // Commit2
-        // Commit[Repo.firstRoot]
     }
-    // Commit
     eventually {
         Branching[Repo.firstRoot]
-        // Commit2
     }
 }
 
@@ -369,45 +399,16 @@ pred testBranchCommitMerge {
     next_state Commit[Repo.firstRoot]
     next_state next_state Merge[Repo.firstRoot]
 }
-run testBranchCommitMerge for exactly 4 CommitNode, exactly 2 Root, 5 Int
+// run testBranchCommitMerge for exactly 4 CommitNode, exactly 2 Root, 5 Int
 
 
-// pred Merge[featureBranch, destinationBranch: Int] {
-
-// }
-
-// pred Revert[commitId: Int] {
-
-// }
-
--- valid commit: 
--- 1) deletion: keep track of set of files, if missing a file (size of set), then commit is valid
--- 2) creation: keep track of set of files, if an additional file (size of set compared to prev commit (next)), then commit is valid
--- 3) modification: if there exists a file in set of files where state is dirty, then we can commit, then change state of file back to clean
-
-// pred validCommit {
-//     WellformedBranch[c.currBranch]
-//     -- previous commits remain unchanged (fix syntax)
-//     all c: CommitNode | {
-//         -- to define a valid commit, there must be a change in file state
-//         c.fileState' != c.fileState
-
-        
-//         c in c.currentBranch.commits implies c' in c.currentBranch.commits
-
-//         -- add only one commit
-
-//     }
-
-//     // New Commit
-//     some c: CommitNode | {
-        
-//     }
-
-//     all c: CommitNode | {
-//         c = c.
-//     }
-// }
-
--- valid merge:
--- same # of files and within that, same file ids
+pred testCommitCommitRevert {
+    Init
+    always {
+        WellformedRepo
+    }
+    Commit[Repo.firstRoot]
+    next_state Commit[Repo.firstRoot]
+    next_state next_state Revert[Repo.firstRoot]
+}
+// run testCommitCommitRevert for exactly 4 CommitNode, exactly 1 Root, exactly 3 Int
