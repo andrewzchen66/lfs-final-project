@@ -105,9 +105,8 @@ pred Init {
 // helper predicate to ensure integrity of repo's DAG structure
 pred Acyclic {
     no c: CommitNode | {
-        c in c.^next
-        // TODO: what is the correct way to implement reachable over two fields, one of them being a set?
-        // reachable[c, c, next, outgoingBranches]
+        c in c.^(next + outgoingBranches)
+        // the correct way to implement reachable over two fields, one of them being a set
     }
 
     all c: CommitNode | {
@@ -117,121 +116,102 @@ pred Acyclic {
     } 
 }
 
-// // helper predicate to ensure integrity of repo's DAG structure
-// pred Acyclic {
-//     no c: CommitNode | {
-//         c in c.^next
-//     }
-// }
+// should not be sat
+pred Cyclic {
+    some c: CommitNode | {
+        c in c.^(next + outgoingBranches)
+    }
+}
 
-// // should not be sat
-// pred Cyclic {
-//     some c: CommitNode | {
-//         c in c.^next
-//     }
-// }
+// valid and disjoint commit file states
+pred UniqueCommits {
+    all disj c1, c2: Repo.totalCommits | c1.fileState != c2.fileState
+}
 
-// // valid and disjoint commit IDs
-// pred UniqueCommitIDs {
-//     all disj c1, c2: Repo.totalCommits | c1.commitID != c2.commitID
-// }
+// should not be sat, there exists at least two different commit nodes with the same file states
+pred NonUniqueCommits {
+    some disj c1, c2: Repo.totalCommits | c1.fileState = c2.fileState
+}
 
-// // should not be sat, there exists at least two different commit nodes with the same commmit IDs
-// pred NonUniqueCommitIDs {
-//     some disj c1, c2: Repo.totalCommits | c1.commitID = c2.commitID
-// }
+// all commit nodes are reachable from the main node and are accounted for
+pred Reachable { 
+    all c: CommitNode | {
+        c in Repo.totalCommits implies reachable[c, Repo.firstRoot, next, outgoingBranches]
+        //c in Repo.mainBranch.root.*next
+    }
+}
 
-// // valid and disjoint branch IDs
-// pred UniqueBranchIDs {
-//     all disj b1, b2: Repo.branches | b1.branchID != b2.branchID
-// }
+// should not be sat
+pred NotReachable { 
+    some c: CommitNode | {
+        c in Repo.totalCommits and not reachable[c, Repo.firstRoot, next, outgoingBranches]
+        //c not in Repo.mainBranch.root.*next
+    }
+}
 
-// // should not be sat, there exists at least two different branches with the same branch IDs
-// pred NonUniqueBranchIDs {
-//     some disj b1, b2: Repo.branches | b1.branchID = b2.branchID
-// }
+// root commit has no parents, ensuring its root properties
+pred RootNoParents {
+    no c: CommitNode | {
+        Repo.firstRoot in c.next
+    }
+}
 
-// // all commit nodes are reachable from the main node and are accounted for
-// pred Reachable { 
-//     all c: CommitNode | {
-//         c in Repo.mainBranch.root.*next
-//     }
-// }
+// should not be sat, root commit is not actually the root commit and has parents
+pred RootWithParents {
+    some c: CommitNode | {
+        Repo.firstRoot in c.next
+    }
+}
 
-// // should not be sat
-// pred NotReachable { 
-//     some c: CommitNode | {
-//         c not in Repo.mainBranch.root.*next
-//     }
-// }
+// integrity of commit history is maintained: no commit deletion allowed
+pred NoCommitDeletion {
+    all c: CommitNode | {
+        c in Repo.totalCommits implies c in Repo.totalCommits'
+    }
+}
 
-// // root commit has no parents, ensuring its root properties
-// pred RootNoParents {
-//     no c: CommitNode | {
-//         Repo.mainBranch.root in c.next
-//     }
-// }
+// should not be say, again, the integrity of the commit history is compromised b/c commit deletion is allowed
+pred CommitDeletionAllowed {
+    some c: CommitNode | {
+        c in Repo.totalCommits
+        c not in Repo.totalCommits'
+    }
+}
 
-// // should not be sat, root commit is not actually the root commit and has parents
-// pred RootWithParents {
-//     some c: CommitNode | {
-//         Repo.mainBranch.root in c.next
-//     }
-// }
+// existing ids do not change across operations, commit history is maintained
+pred ImmutableHistory {
+    all c: Repo.totalCommits | {
+        c.fileState' = c.fileState
+    }
 
-// // existing ids do not change across operations, commit history is maintained
-// pred ImmutableIDs {
-//     all c: CommitNode | {
-//         c.commitID' = c.commitID
-//     }
+    all c: CommitNode | {
+        (c in Repo.totalCommits) and (c in Repo.totalCommits')
+    }
     
-//     all b: Branch | {
-//         b.branchID' = b.branchID
-//     }
-// }
+}
 
-// // should not be sat, existing ids could change across operations, interrupting the integrity of commit history
-// pred MutableIDs {
-//     some c: CommitNode | {
-//         c.commitID' != c.commitID
-//     }
+// should not be sat, existing commit file states could change across operations, interrupting the integrity of commit history
+pred MutableHistory {
+    some c: CommitNode | {
+        c.fileState' != c.fileState
+        (c in Repo.totalCommits) and not (c in Repo.totalCommits')
+    }
+}
 
-//     some b: Branch | {
-//         b.branchID' != b.branchID
-//     }
-// }
+// git invariants that must hold regardless of transition state/operation
+pred Invariants {
+    Acyclic
+    UniqueCommits
+    Reachable
+    RootNoParents
+}
 
-
-// // integrity of commit history is maintained: no commit deletion allowed
-// pred NoCommitDeletion {
-//     all c: CommitNode | {
-//         c in Repo.totalCommits implies c in Repo.totalCommits'
-//     }
-// }
-
-// // should not be say, again, the integrity of the commit history is compronised b/c commit deletion is allowed
-// pred CommitDeletionAllowed {
-//     some c: CommitNode | {
-//         c in Repo.totalCommits
-//         c not in Repo.totalCommits'
-//     }
-// }
-
-// // git invariants that must hold regardless of transition state/operation
-// pred Invariants {
-//     Acyclic
-//     UniqueCommitIDs
-//     UniqueBranchIDs
-//     Reachable
-//     RootNoParents
-// }
-
-// // git invariants that must hold after an operation (commit, branch, merge or revert)
-// pred PostOperationInvariants {
-//     Invariants
-//     ImmutableIDs
-//     NoCommitDeletion
-// }
+// git invariants that must hold after an operation (commit, branch, merge or revert)
+pred PostOperationInvariants {
+    Invariants
+    ImmutableHistory
+    NoCommitDeletion
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////
 

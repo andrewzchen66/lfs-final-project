@@ -9,24 +9,26 @@ option min_tracelength 2
 // PROPERTY TESTING:
 
 test suite for Init {
-    assert { Init } is sat for exactly 1 Branch, exactly 1 User, exactly 1 CommitNode, exactly 1 Int
+    assert { Init } is sat for exactly 1 Repo, exactly 1 Root, exactly 1 Unused, exactly 1 CommitNode, exactly 1 Int
 }
 
 test suite for Invariants {
     // TESTS OF INCLUSION
-    assert { UniqueCommitIDs } is necessary for Invariants
-    assert { UniqueBranchIDs } is necessary for Invariants
+    assert { UniqueCommits } is necessary for Invariants
     assert { Acyclic } is necessary for Invariants
     assert { Reachable } is necessary for Invariants
     assert { RootNoParents } is necessary for Invariants
 
     // TESTS OF EXLCUSION
     // is sufficient for, is sat/unsat, is checked
-    //assert { NonUniqueCommitIDs } is unsat for exactly 1 Branch, exactly 1 User, 2 CommitNode, 3 Int
-    //assert { NonUniqueBranchIDs } is unsat for exactly 1 Branch, exactly 1 User, 2 CommitNode, 3 Int
-    assert { not Cyclic } is sat for exactly 1 Branch, exactly 1 User, 2 CommitNode, 3 Int
-    assert { not NotReachable } is sat for exactly 1 Branch, exactly 1 User, 2 CommitNode, 3 Int
-    assert { not RootWithParents } is sat for exactly 1 Branch, exactly 1 User, 2 CommitNode, 3 Int
+    assert { UniqueCommits } is sat for exactly 1 Repo, 1 Root, 2 CommitNode
+    assert { Acyclic } is sat for exactly 1 Repo, 1 Root, 2 CommitNode
+    assert { Reachable } is sat for exactly 1 Repo, 1 Root, 2 CommitNode
+    assert { RootWithParents } is sat for exactly 1 Repo, 1 Root, 2 CommitNode
+    assert { Invariants and Cyclic } is unsat for exactly 1 Repo, 1 Root, 2 CommitNode
+    assert { Invariants and NotReachable } is unsat for exactly 1 Repo, 1 Root, 2 CommitNode
+    assert { Invariants and RootWithParents } is unsat for exactly 1 Repo, 1 Root, 2 CommitNode
+    assert { Invariants and NonUniqueCommits } is unsat for exactly 1 Repo, 1 Root, 2 CommitNode
 }
 
 // after any two arbitrary operations, properties must be preserved
@@ -34,14 +36,18 @@ test suite for Invariants {
 pred twoStepTrace {
     Init
     WellformedRepo
-    some b1: Branch |
-        Branching[b1, Repo.mainBranch] //or Commit[b1]
-    some b2: Branch |
-        Branching[b2, Repo.mainBranch] //or Commit[b2] or Merge[b2, Repo.mainBranch] or Revert[b2]
+    some r1, r2: Root | Branching[r1] or Commit[r2]
+
+    some r3, r4: Root | Branching[r3] or Commit[r4]
+
+    some c3, c4: CommitNode | Merge[c3] or Revert[c4]
 }
 
 test suite for PostOperationInvariants {
     assert { twoStepTrace } is sufficient for PostOperationInvariants
+
+    assert { twoStepTrace and CommitDeletionAllowed } is unsat for exactly 1 Repo, 1 Root, 2 CommitNode
+    assert { twoStepTrace and MutableHistory } is unsat for exactly 1 Repo, 1 Root, 2 CommitNode
 }
 
 
