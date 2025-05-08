@@ -19,11 +19,12 @@ test suite for Invariants {
     assert { Reachable } is necessary for Invariants
     assert { RootNoParents } is necessary for Invariants
 
-    // TESTS OF EXLCUSION
     assert { UniqueCommits } is sat for exactly 1 Repo, 1 Root, 2 CommitNode
     assert { Acyclic } is sat for exactly 1 Repo, 1 Root, 2 CommitNode
     assert { Reachable } is sat for exactly 1 Repo, 1 Root, 2 CommitNode
     assert { RootWithParents } is sat for exactly 1 Repo, 1 Root, 2 CommitNode
+
+    // TESTS OF EXLCUSION
     assert { Invariants and Cyclic } is unsat for exactly 1 Repo, 1 Root, 2 CommitNode
     assert { Invariants and NotReachable } is unsat for exactly 1 Repo, 1 Root, 2 CommitNode
     assert { Invariants and RootWithParents } is unsat for exactly 1 Repo, 1 Root, 2 CommitNode
@@ -39,7 +40,7 @@ pred threeStepTrace {
 
     some r3, r4: Root | Branching[r3] or Commit[r4]
 
-    some c3, c4: CommitNode | Merge[c3] or Revert[c4]
+    some c3, c4: CommitNode, r5: Root | Merge[c3, r5] or Revert[c4]
 }
 
 test suite for PostOperationInvariants {
@@ -54,7 +55,7 @@ pred BranchCommitMergeTrace {
     WellformedRepo
     some r: Root | Branching[r]
     some r2: Root | Commit[r2]
-    some c: CommitNode | Merge[c]
+    some c: CommitNode, r3: Root | Merge[c, r3]
 }
 
 test suite for BranchCommitMergeTraceInvariants {
@@ -63,7 +64,7 @@ test suite for BranchCommitMergeTraceInvariants {
     assert { BranchCommitMergeTrace and MutableHistory } is unsat for exactly 1 Repo, 1 Root, 2 CommitNode
 }
 
-pred commitBranchRevertTrace {
+pred CommitBranchRevertTrace {
     Init
     WellformedRepo
     some r: Root | Commit[r]
@@ -72,12 +73,22 @@ pred commitBranchRevertTrace {
 }
 
 test suite for CommitBranchRevertTraceInvariants {
-    assert { commitBranchRevertTrace } is sufficient for PostOperationInvariants
-    assert { commitBranchRevertTrace and CommitDeletionAllowed } is unsat for exactly 1 Repo, 1 Root, 2 CommitNode
-    assert { commitBranchRevertTrace and MutableHistory } is unsat for exactly 1 Repo, 1 Root, 2 CommitNode
+    assert { CommitBranchRevertTrace } is sufficient for PostOperationInvariants
+    assert { CommitBranchRevertTrace and CommitDeletionAllowed } is unsat for exactly 1 Repo, 1 Root, 2 CommitNode
+    assert { CommitBranchRevertTrace and MutableHistory } is unsat for exactly 1 Repo, 1 Root, 2 CommitNode
 }
 
+pred CommitCommitRevertTrace {
+    Init
+    WellformedRepo
+    some r: Root | Commit[r]
+    some r2: Root | Commit[r2]
+    some c: CommitNode | Revert[c]
+}
 
-// unit testing: tests of inclusion and exclusion for every predicate
-
+test suite for CommitBranchRevertTraceInvariants {
+    assert { CommitCommitRevertTrace } is sufficient for PostOperationInvariants
+    assert { CommitCommitRevertTrace and CommitDeletionAllowed } is unsat for exactly 1 Repo, 1 Root, 2 CommitNode
+    assert { CommitCommitRevertTrace and MutableHistory } is unsat for exactly 1 Repo, 1 Root, 2 CommitNode
+}
 

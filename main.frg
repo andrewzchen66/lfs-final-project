@@ -3,8 +3,8 @@
 open "operations.frg"
 open "sigs.frg"
 
-option max_tracelength 5
-option min_tracelength 5
+option max_tracelength 6
+option min_tracelength 6
 
 // I want this to be the ideal test format, but things like always Commit return UNSAT
 // pred genericTest {
@@ -25,7 +25,7 @@ pred testCommitOneNode {
     }
     Commit[Repo.firstRoot]
 }
-run testCommitOneNode for exactly 4 CommitNode, 5 Int
+//run testCommitOneNode for exactly 4 CommitNode, 5 Int
 
 
 pred testBranchOneNode {
@@ -51,7 +51,7 @@ pred testBranch3 {
     next_state next_state Branching[Repo.firstRoot]
 
 }
-run testBranch3 for exactly 4 CommitNode, exactly 4 Root, 5 Int
+//run testBranch3 for exactly 4 CommitNode, exactly 4 Root, 5 Int
 
 pred testBranchMerge {
     Init
@@ -60,36 +60,61 @@ pred testBranchMerge {
     }
     // Commit
     Branching[Repo.firstRoot]
-    next_state Merge[Repo.firstRoot]
+    next_state {
+        some br: Root | {
+          br in Repo.firstRoot.outgoingBranches
+          Merge[Repo.firstRoot, br]
+        }
+    }
 }
 
-run testBranchMerge for exactly 4 CommitNode, exactly 2 Root, 5 Int
+run testBranchMerge for exactly 4 CommitNode, exactly 2 Root, 7 Int
 
-
-pred testBranchCommitMerge {
+pred testBranchMergeDiffRoots {
     Init
     always {
         WellformedRepo
     }
     // Commit
     Branching[Repo.firstRoot]
-    next_state Commit[Repo.firstRoot]
-    next_state next_state Merge[Repo.firstRoot]
+    next_state Branching[Repo.firstRoot]
+    next_state next_state {
+        some b1, b2: Root - Repo.firstRoot | {
+          b1 in Repo.firstRoot.outgoingBranches
+          b2 in Repo.firstRoot.outgoingBranches
+          b1 != b2
+          Merge[b1, b2]
+        }
+    }
 }
-run testBranchCommitMerge for exactly 4 CommitNode, exactly 2 Root, 5 Int
+
+run testBranchMergeDiffRoots for exactly 7 CommitNode, exactly 3 Root, 5 Int
+
+
+// pred testBranchCommitMerge {
+//     Init
+//     always {
+//         WellformedRepo
+//     }
+//     // Commit
+//     Branching[Repo.firstRoot]
+//     next_state Commit[Repo.firstRoot]
+//     next_state next_state Merge[Repo.firstRoot]
+// }
+//run testBranchCommitMerge for exactly 4 CommitNode, exactly 2 Root, 5 Int
 
 
 // returns UNSAT
-pred testCommitCommitRevert {
-    Init
-    always {
-        WellformedRepo
-    }
-    Commit[Repo.firstRoot]
-    next_state Commit[Repo.firstRoot]
-    next_state next_state Revert[Repo.firstRoot]
-}
-run testCommitCommitRevert for exactly 4 CommitNode, exactly 1 Root, exactly 3 Int
+// pred testCommitCommitRevert {
+//     Init
+//     always {
+//         WellformedRepo
+//     }
+//     Commit[Repo.firstRoot]
+//     next_state Commit[Repo.firstRoot]
+//     next_state next_state Revert[Repo.firstRoot]
+// }
+// run testCommitCommitRevert for exactly 4 CommitNode, exactly 1 Root, exactly 3 Int
 
 // pred testCommitOneNode {
 //     // Init
