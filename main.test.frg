@@ -7,7 +7,7 @@ open "main.frg"
 option max_tracelength 2
 option min_tracelength 2
 
-// Property-based testing:
+// Property-based testing: should hold before and after an operation (branch, merge, revert)
 // ______________________________________________________
 // The following should hold before and after every operation:
 // Unique and Immutable identifiers-- Branch IDs and CommitIDs are same
@@ -18,7 +18,8 @@ option min_tracelength 2
 
 // Unit Tests?
 // Idempotence for Revert
-
+// init states
+// more properties for merging
 
 test suite for Init {
     example pos_Init is {Init} for {
