@@ -289,9 +289,7 @@ pred WellformedRepo {
             // All non-firstRoots are all properly linked to a different CommitNode
             r != Repo.firstRoot => {
                 // ______________________________________________________
-                // TODO: For now, only allow branch off main branch
-                // Comment this out to remove this constraint
-                r.prevBranchNode in Repo.firstRoot.*next
+                //r.prevBranchNode in Repo.firstRoot.*next
                 // ______________________________________________________
                 r.prevBranchNode in Repo.totalCommits
                 r in r.prevBranchNode.outgoingBranches

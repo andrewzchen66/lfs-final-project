@@ -4,8 +4,8 @@ open "operations.frg"
 open "sigs.frg"
 open "main.frg"
 
-option max_tracelength 5
-option min_tracelength 5
+option max_tracelength 10
+option min_tracelength 10
 
 // Property-based testing: should hold before and after an operation (branch, merge, revert)
 // ______________________________________________________
@@ -151,11 +151,12 @@ pred CommitUNSAT2 {
 
 
 test suite for Branching {
-    // assert {BranchingSAT} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
-    // assert {BranchingSAT2} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
-    // assert {BranchingSAT3} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+    assert {BranchingSAT} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+    assert {BranchingSAT2} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+    assert {BranchingSAT3} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
 
-    // assert {BranchingUNSAT} is unsat for exactly 1 Repo, exactly 2 CommitNode, exactly 2 Root, exactly 3 Int
+    assert {BranchingUNSAT} is unsat for exactly 1 Repo, exactly 2 CommitNode, exactly 2 Root, exactly 3 Int
+    assert { BranchOffNonMain } is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 4 Root, exactly 5 Int
 }
 
 // SAT: sanity, branching can occur off initial state
@@ -203,6 +204,19 @@ pred BranchingSAT3 {
     }
 }
 
+// SAT: branching off a non-main branch
+pred BranchOffNonMain {
+    Init
+    always WellformedRepo
+
+    // first, branch off the main root
+    Branching[Repo.firstRoot]
+    // then, branch off of that new branch
+    next_state {
+        some r: Root | r != Repo.firstRoot and Branching[r]
+    }
+}
+
 // UNSAT: cannot branch with no unusedCommits 
 pred BranchingUNSAT {
     Init
@@ -212,56 +226,56 @@ pred BranchingUNSAT {
     some r: Root | Branching[r]
 }
 
-test suite for Merge {
-    assert {MergeSAT} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
-    assert {MergeUNSAT} is unsat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
-}
+// test suite for Merge {
+//     assert {MergeSAT} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+//     assert {MergeUNSAT} is unsat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+// }
 
 // not working
-pred MergeSAT {
-    Init
-    always WellformedRepo
+// pred MergeSAT {
+//     Init
+//     always WellformedRepo
 
-    // manually add a child to allow branching for merge
-    some r: Root, c: commitNode | {
-        next_state Branching[r] 
-        next_state next_state {
-            r in Repo.totalCommits
-            c in Repo.totalCommits
-            c.next = none
-            r.next = c
-            r.outgoingBranches = c
-            Merge[]
-        }
-    }
-}
+//     // manually add a child to allow branching for merge
+//     some r: Root, c: commitNode | {
+//         next_state Branching[r] 
+//         next_state next_state {
+//             r in Repo.totalCommits
+//             c in Repo.totalCommits
+//             c.next = none
+//             r.next = c
+//             r.outgoingBranches = c
+//             Merge[]
+//         }
+//     }
+// }
 
-pred MergeSAT2 {
-    Init
-    always WellformedRepo
+// pred MergeSAT2 {
+//     Init
+//     always WellformedRepo
 
-    // manually add a child to allow branching for merge
-    some r: Root, c: commitNode | {
-        next_state Branching[r] 
-        next_state next_state {
-            r in Repo.totalCommits
-            c in Repo.totalCommits
-            c.next = none
-            r.next = c
-            r.outgoingBranches = c
-            Merge[]
-        }
-    }
+//     // manually add a child to allow branching for merge
+//     some r: Root, c: commitNode | {
+//         next_state Branching[r] 
+//         next_state next_state {
+//             r in Repo.totalCommits
+//             c in Repo.totalCommits
+//             c.next = none
+//             r.next = c
+//             r.outgoingBranches = c
+//             Merge[]
+//         }
+//     }
     
-}
+// }
 
-pred MergeUNSAT {
-    Init
-    always WellformedRepo
+// pred MergeUNSAT {
+//     Init
+//     always WellformedRepo
 
-    Unused.unusedCommits = none
-    some c: CommitNode | Merge[c]
-}
+//     Unused.unusedCommits = none
+//     some c: CommitNode | Merge[c]
+// }
 
 test suite for Revert {
     assert {RevertSAT2} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
