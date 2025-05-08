@@ -319,7 +319,7 @@ pred testCommitOneNode {
     }
     Commit[Repo.firstRoot]
 }
-// run testCommitOneNode for exactly 4 CommitNode, 5 Int
+run testCommitOneNode for exactly 4 CommitNode, 5 Int
 
 
 pred testBranchOneNode {
@@ -332,7 +332,7 @@ pred testBranchOneNode {
     }
 }
 
-// run testBranchOneNode for exactly 4 CommitNode, exactly 2 Root, 5 Int
+run testBranchOneNode for exactly 4 CommitNode, exactly 2 Root, 5 Int
 
 pred testBranch3 {
     Init
@@ -345,7 +345,7 @@ pred testBranch3 {
     next_state next_state Branching[Repo.firstRoot]
 
 }
-// run testBranch3 for exactly 4 CommitNode, exactly 4 Root, 5 Int
+run testBranch3 for exactly 4 CommitNode, exactly 4 Root, 5 Int
 
 pred testBranchMerge {
     Init
@@ -357,7 +357,7 @@ pred testBranchMerge {
     next_state Merge[Repo.firstRoot]
 }
 
-// run testBranchMerge for exactly 4 CommitNode, exactly 2 Root, 5 Int
+run testBranchMerge for exactly 4 CommitNode, exactly 2 Root, 5 Int
 
 
 pred testBranchCommitMerge {
@@ -370,7 +370,7 @@ pred testBranchCommitMerge {
     next_state Commit[Repo.firstRoot]
     next_state next_state Merge[Repo.firstRoot]
 }
-// run testBranchCommitMerge for exactly 4 CommitNode, exactly 2 Root, 5 Int
+run testBranchCommitMerge for exactly 4 CommitNode, exactly 2 Root, 5 Int
 
 
 pred testCommitCommitRevert {
@@ -382,4 +382,4 @@ pred testCommitCommitRevert {
     next_state Commit[Repo.firstRoot]
     next_state next_state Revert[Repo.firstRoot]
 }
-// run testCommitCommitRevert for exactly 4 CommitNode, exactly 1 Root, exactly 3 Int
+run testCommitCommitRevert for exactly 4 CommitNode, exactly 1 Root, exactly 3 Int
