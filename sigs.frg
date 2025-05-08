@@ -4,7 +4,6 @@
 option max_tracelength 2
 option min_tracelength 2
 
-sig User {}
 
 sig Branch {
     var branchID: one Int,

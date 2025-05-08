@@ -1,19 +1,26 @@
 #lang forge/temporal
 
-open "sigs.frg"
 open "operations.frg"
+open "sigs.frg"
 
 option max_tracelength 2
 option min_tracelength 2
 
 pred testCommitOneNode {
+    // Init
+    // WellformedRepo
+    // validCommitIDs
+    // validBranchIDs
+    // Commit[Repo.mainBranch]
+
     Init
+
     WellformedRepo
     //Commit[Repo.mainBranch]
     
 }
 
-run testCommitOneNode for exactly 1 Branch, exactly 1 User, 2 CommitNode, 3 Int
+run testCommitOneNode for exactly 1 Branch, 2 CommitNode, 3 Int
 
 
 -- valid commit: 
