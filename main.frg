@@ -38,7 +38,7 @@ pred testBranchOneNode {
     }
 }
 
-run testBranchOneNode for exactly 4 CommitNode, exactly 2 Root, 5 Int
+// run testBranchOneNode for exactly 4 CommitNode, exactly 2 Root, 5 Int
 
 pred testBranch3 {
     Init
@@ -79,6 +79,7 @@ pred testBranchCommitMerge {
 // run testBranchCommitMerge for exactly 4 CommitNode, exactly 2 Root, 5 Int
 
 
+// returns UNSAT
 pred testCommitCommitRevert {
     Init
     always {
