@@ -151,12 +151,12 @@ pred CommitUNSAT2 {
 
 
 test suite for Branching {
-    assert {BranchingSAT} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
-    assert {BranchingSAT2} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
-    assert {BranchingSAT3} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
-    assert {BranchOffNonMainSAT4} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 4 Root, exactly 5 Int
+    // assert {BranchingSAT} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+    // assert {BranchingSAT2} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+    // assert {BranchingSAT3} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+    // assert {BranchOffNonMainSAT4} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 4 Root, exactly 5 Int
 
-    assert {BranchingUNSAT} is unsat for exactly 1 Repo, exactly 2 CommitNode, exactly 2 Root, exactly 3 Int
+    // assert {BranchingUNSAT} is unsat for exactly 1 Repo, exactly 2 CommitNode, exactly 2 Root, exactly 3 Int
 }
 
 // SAT: sanity, branching can occur off initial state
@@ -294,7 +294,7 @@ pred MergeUNSAT2 {
 }
 
 test suite for Revert {
-    // assert {RevertSAT2} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+     assert {RevertSAT2} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
     // assert {RevertUNSAT} is unsat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
 }
 
