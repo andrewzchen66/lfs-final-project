@@ -98,49 +98,49 @@ pred Revert[b: Branch, commitId: Int] {
 }
 
 // both branches 
-// pred Merge[featureBranch, destinationBranch: Branch] {
-//     // both branches must be well-formed and distinct before merging
-//     featureBranch != destinationBranch
-//     WellformedBranch[featureBranch]
-//     WellformedBranch[destinationBranch]
+pred Merge[featureBranch, destinationBranch: Branch] {
+    // both branches must be well-formed and distinct before merging
+    featureBranch != destinationBranch
+    WellformedBranch[featureBranch]
+    WellformedBranch[destinationBranch]
 
-//     // find the tips of both branches
-//     some featureTip: CommitNode | {
-//         featureTip in featureBranch.commits
-//         featureTip.next = none
-//     }
-//     some destinationTip : CommitNode | {
-//         destinationTip in destinationBranch.commits
-//         destinationTip.next = none
-//     }
+    // create a single new commit merge off destination branch
+    one new: CommitNode | {
+        new not in Repo.totalCommits
 
-//     // create a single new commit merge off destination branch
-//     one new: CommitNode | {
-//         new not in Repo.totalCommits
+        // both parents/tips point to new commit
+        featureTip.next' = new
+        destinationTip.next' = new
 
-//         // both parents/tips point to new commit
-//         featureTip.next' = new
-//         destinationTip.next' = new
+        // ensure new commmit is the latest leaf node off the destination branch
+        new.next' = none
+        new.currentBranch' = destinationBranch
+        destinationBranch.commits' = destinationBranch.commits + new
 
-//         // ensure new commmit is the latest leaf node off the destination branch
-//         new.next' = none
-//         new.currentBranch' = destinationBranch
-//         destinationBranch.commits' = destinationBranch.commits + new
+        // record new commit in total commits
+        Repo.totalCommits' = Repo.totalCommits + new
 
-//         // record new commit in total commits
-//         Repo.totalCommits' = Repo.totalCommits + new
+        // find the tips of both branches
+        some featureTip: CommitNode | {
+            featureTip in featureBranch.commits
+            featureTip.next = none
+        }
+        some destinationTip : CommitNode | {
+            destinationTip in destinationBranch.commits
+            destinationTip.next = none
+        }
 
-//         // ensure commit is valid by checking filestates
-//         new.fileState' != destinationTip.fileState
-//         new.fileState' != featureTiip.fileState
+        // ensure commit is valid by checking filestates
+        new.fileState' != destinationTip.fileState
+        new.fileState' != featureTiip.fileState
 
-//         // all other old commits and branches are untouched
-//         all oldCommits: CommitNode - new | {
-//             oldCommits.fileState' = oldCommit.fileState
-//         }
+        // all other old commits and branches are untouched
+        all oldCommits: CommitNode - new | {
+            oldCommits.fileState' = oldCommit.fileState
+        }
 
-//         all oldBranches: Branch - destinationBranch | {
-//             oldBranches.commits' = oldBranches.commits
-//         }
-//     }
-// }
+        all oldBranches: Branch - destinationBranch | {
+            oldBranches.commits' = oldBranches.commits
+        }
+    }
+}
