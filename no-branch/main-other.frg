@@ -39,14 +39,6 @@ pred Acyclic {
 
 // establish wellformedness for all branches, or if all commits stem linearly from the root
 pred WellformedBranch[r: Root] {
-    // For now, we only allow branching off of main branch
-
-    // (r = Repo.firstRoot) or (some parent: CommitNode | {
-    //     parent in Repo.firstRoot.*next
-    //     r.prevBranchNode = parent
-    // })
-
-
     // confirm DAG structure
     Acyclic
 
@@ -60,7 +52,7 @@ pred WellformedBranch[r: Root] {
         // Only one root allowed for this branch
         otherRoot in r.^next 
 
-        // No cycles from prevBranchNode
+        
     }
 
     // root shouldn't have a parent CommitNode
@@ -118,8 +110,11 @@ pred WellformedRepo {
 
             // All non-firstRoots are all properly linked to a different CommitNode
             r != Repo.firstRoot => {
-                // TODO: For now, only branch off main branch
+                // ______________________________________________________
+                // TODO: For now, only allow branch off main branch
+                // Comment this out to remove this constraint
                 r.prevBranchNode in Repo.firstRoot.*next
+                // ______________________________________________________
                 r.prevBranchNode in Repo.totalCommits
                 r in r.prevBranchNode.outgoingBranches
             }
@@ -143,7 +138,6 @@ pred AddOneCommitNode {
 
 -- abstraction: all commits are presumed to be valid, file modification is out of scope
 -- abstraction: concurrent committing modeled through interleaved commits in Forge (any branch modified at a given time)
-// TODO: concurrent commiting-- add set Branches
 pred Commit[r: Root] {
     AddOneCommitNode
     
@@ -165,7 +159,6 @@ pred Commit[r: Root] {
         no prevCommit: r.*next | {
             prevCommit.fileState = parent.next'.fileState'
         }
-        // parent.next'.fileState' != parent.fileState
 
         // All other CommitNodes' fields should remain the same
         all c: Repo.totalCommits | {
@@ -208,12 +201,7 @@ pred Commit2 {
 
 pred Branching[r: Root] {
     AddOneCommitNode
-    
-    // Add new branching CommitNode to the most recent CommitNode
-    // let newRoot = Unused.unusedCommits - Unused.unusedCommits' | {
 
-    // } 
-    
     one newRoot: Root | {
         newRoot = Unused.unusedCommits - Unused.unusedCommits'
         one c: Repo.totalCommits | {
@@ -235,32 +223,17 @@ pred Branching[r: Root] {
             c.fileState = c.fileState'
         }
     }
-    
-
-    // ________________________________________________________________
-
-    // // Update CommitNode fields
-    // all c: Repo.totalCommits | {
-    //     (c in r.*next and c.next = none) => {
-    //         // c is the parent of the new commit
-    //         c.next' = (Unused.unusedCommits - Unused.unusedCommits')
-    //         c.next'.next' = none
-    //         c.next'.outgoingBranches' = none
-    //         c.next'.fileState' != none
-    //         c.next'.fileState' != c.fileState // New commit has different fileState than parent
-    //     } else {
-    //         // All other states' field should remain the same
-    //         c.next = c.next'
-    //         c.outgoingBranches = c.outgoingBranches'
-    //         c.fileState = c.fileState'
-    //     }
-    // }
 }
 
 // parentCommit is the CommitNode that the branch we want to merge branches off of.
-// We create a new CommitNode that 
+// We create a new CommitNode at the end of parentCommit's branch with the merged state of the branch we merge
 // NOTE: In our merge, we always override target branch's filestate with our to-be-merged branch's fileState
 pred Merge[parentCommit: CommitNode] {
+    // TODO: Currently we are unable to specify the exact branch to merge, 
+    // we just grab an arbitrary rootToMerge parentCommit.outgoingBranches.
+    // It would involve adding a parameter for the Root that we want to merge.
+    // I didn't do this because I didn't know how to test this, as the only root
+    // I can access is Repo.firstRoot, which you obviously can't merge
     
     AddOneCommitNode
 
@@ -327,8 +300,7 @@ pred Revert[revertingTo: CommitNode] {
     }
 }
 
-
-// Get rid of all parameters in the operations. For example Commit predicate would just ensure that at this timestep a commit somewhere would happen, so our run would call something like:
+// I want this to be the ideal test format, but things like always Commit return UNSAT
 // pred genericTest {
 //     Init
 //     always{
@@ -336,7 +308,6 @@ pred Revert[revertingTo: CommitNode] {
 //         Commit or Branch or Merge or …
 //     }
 // }
-
 // This would align more with how we did the goats_and_wolves.frg assignment
 
 pred testCommitOneNode {
