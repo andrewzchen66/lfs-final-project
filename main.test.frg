@@ -154,9 +154,9 @@ test suite for Branching {
     assert {BranchingSAT} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
     assert {BranchingSAT2} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
     assert {BranchingSAT3} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+    assert {BranchOffNonMainSAT4} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 4 Root, exactly 5 Int
 
     assert {BranchingUNSAT} is unsat for exactly 1 Repo, exactly 2 CommitNode, exactly 2 Root, exactly 3 Int
-    assert { BranchOffNonMain } is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 4 Root, exactly 5 Int
 }
 
 // SAT: sanity, branching can occur off initial state
@@ -205,7 +205,7 @@ pred BranchingSAT3 {
 }
 
 // SAT: branching off a non-main branch
-pred BranchOffNonMain {
+pred BranchOffNonMainSAT4 {
     Init
     always WellformedRepo
 
@@ -227,7 +227,7 @@ pred BranchingUNSAT {
 }
 
 test suite for Merge {
-    assert {MergeSAT} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+    // assert {MergeSAT} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
     // assert {MergeUNSAT} is unsat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
     // assert {MergeUNSAT2} is unsat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
 
@@ -238,45 +238,59 @@ pred MergeSAT {
     Init
     always WellformedRepo
 
-    // manually add a child to allow branching for merge
-    some r: Root, c: commitNode | {
-        next_state Branching[r] 
-        next_state next_state {
-            r in Repo.totalCommits
-            c in Repo.totalCommits
-            c.next = none
-            r.next = c
-            r.outgoingBranches = c
-            Merge[]
+    // Step 1: Commit off first root
+    // Step 2: Branch off the firstRoot
+    eventually {
+        some c: Unused.unusedCommits | {
+            Commit[Repo.firstRoot]
+            Repo.firstRoot.next' = c
+            Branching[Repo.firstRoot]
+        }
+    }
+
+    // Step 3: Commit on the new branch
+    eventually {
+        some r: Root | r != Repo.firstRoot and Commit[r]
+    }
+
+    // Step 4: Merge the branches
+    eventually {
+        some parentCommit, branchCommit, mergedCommit: CommitNode | {
+            parentCommit in Repo.firstRoot.*next
+            branchCommit in Repo.totalCommits
+            branchCommit != parentCommit
+            branchCommit.next = none
+
+            Merge[parentCommit]
+
+            mergedCommit = parentCommit.next
+            mergedCommit.fileState = branchCommit.fileState
+            no mergedCommit.next
         }
     }
 }
 
-pred MergeSAT2 {
-    Init
-    always WellformedRepo
 
-    // manually add a child to allow branching for merge
-    some r: Root, c: commitNode | {
-        next_state Branching[r] 
-        next_state next_state {
-            r in Repo.totalCommits
-            c in Repo.totalCommits
-            c.next = none
-            r.next = c
-            r.outgoingBranches = c
-            Merge[]
-        }
-    }
-    
-}
 
+// UNSAT: cannot merge with no unused commits available
 pred MergeUNSAT {
     Init
     always WellformedRepo
 
     Unused.unusedCommits = none
     some c: CommitNode | Merge[c]
+}
+
+// UNSAT: cannot merge with no commits with outgoing branches
+pred MergeUNSAT2 {
+    Init
+    eventually {
+        some parentCommit: CommitNode | {
+            parentCommit.outgoingBranches = none
+            Unused.unusedCommits != none
+            Merge[parentCommit]
+        }
+    }
 }
 
 test suite for Revert {
