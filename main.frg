@@ -3,8 +3,8 @@
 open "operations.frg"
 open "sigs.frg"
 
-option max_tracelength 2
-option min_tracelength 2
+option max_tracelength 5
+option min_tracelength 5
 
 // I want this to be the ideal test format, but things like always Commit return UNSAT
 // pred genericTest {
@@ -25,7 +25,7 @@ pred testCommitOneNode {
     }
     Commit[Repo.firstRoot]
 }
-// run testCommitOneNode for exactly 4 CommitNode, 5 Int
+run testCommitOneNode for exactly 4 CommitNode, 5 Int
 
 
 pred testBranchOneNode {
@@ -51,7 +51,7 @@ pred testBranch3 {
     next_state next_state Branching[Repo.firstRoot]
 
 }
-// run testBranch3 for exactly 4 CommitNode, exactly 4 Root, 5 Int
+run testBranch3 for exactly 4 CommitNode, exactly 4 Root, 5 Int
 
 pred testBranchMerge {
     Init
@@ -63,7 +63,7 @@ pred testBranchMerge {
     next_state Merge[Repo.firstRoot]
 }
 
-// run testBranchMerge for exactly 4 CommitNode, exactly 2 Root, 5 Int
+run testBranchMerge for exactly 4 CommitNode, exactly 2 Root, 5 Int
 
 
 pred testBranchCommitMerge {
@@ -76,7 +76,7 @@ pred testBranchCommitMerge {
     next_state Commit[Repo.firstRoot]
     next_state next_state Merge[Repo.firstRoot]
 }
-// run testBranchCommitMerge for exactly 4 CommitNode, exactly 2 Root, 5 Int
+run testBranchCommitMerge for exactly 4 CommitNode, exactly 2 Root, 5 Int
 
 
 pred testCommitCommitRevert {
@@ -88,7 +88,7 @@ pred testCommitCommitRevert {
     next_state Commit[Repo.firstRoot]
     next_state next_state Revert[Repo.firstRoot]
 }
-// run testCommitCommitRevert for exactly 4 CommitNode, exactly 1 Root, exactly 3 Int
+run testCommitCommitRevert for exactly 4 CommitNode, exactly 1 Root, exactly 3 Int
 
 // pred testCommitOneNode {
 //     // Init
@@ -105,12 +105,3 @@ pred testCommitCommitRevert {
 // }
 
 // run testCommitOneNode for exactly 1 Branch, 2 CommitNode, 3 Int
-
-
--- valid commit: 
--- 1) deletion: keep track of set of files, if missing a file (size of set), then commit is valid
--- 2) creation: keep track of set of files, if an additional file (size of set compared to prev commit (next)), then commit is valid
--- 3) modification: if there exists a file in set of files where state is dirty, then we can commit, then change state of file back to clean
-
--- valid merge:
--- same # of files and within that, same file ids

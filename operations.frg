@@ -4,6 +4,13 @@ open "sigs.frg"
 
 // Move a CommitNode from Unused to Repo.totalCommits
 pred AddOneCommitNode {
+    // some newCommit: CommitNode | {
+    //     newCommit in Unused.unusedCommits
+
+    //     // remove it from Unused, add it to totalCommits
+    //     Unused.unusedCommits' = Unused.unusedCommits - newCommit
+    //     Repo.totalCommits' = Repo.totalCommits + newCommit
+    // }
     Unused.unusedCommits' in Unused.unusedCommits
     Repo.totalCommits in Repo.totalCommits'
     #{Unused.unusedCommits - Unused.unusedCommits'} = 1
@@ -44,33 +51,6 @@ pred Commit[r: Root] {
         }
     }
 
-}
-
-// A version of Commit I created with no parameters. Kinda works, haven't tested it much. 
-// It just contrains that a single Commit will occur at this timestep, but you have no control on which branch it occurs
-// Probably we can delete
-pred Commit2 {
-    AddOneCommitNode
-
-    // Add new CommitNode to the most recent CommitNode
-    one parent: Repo.totalCommits | {
-        // c is the parent of the new commit
-        (parent.next = none)
-        parent.next' = (Unused.unusedCommits - Unused.unusedCommits')
-        parent.next'.next' = none
-        parent.next'.outgoingBranches' = none
-        parent.next'.fileState' != none
-        parent.next'.fileState' != parent.fileState // New commit has different fileState than parent
-
-        // All other CommitNodes' fields should remain the same
-        all c: Repo.totalCommits | {
-            (c != parent) => {
-                c.next' = c.next
-                c.outgoingBranches = c.outgoingBranches'
-                c.fileState = c.fileState'
-            }
-        }
-    }
 }
 
 pred Branching[r: Root] {
@@ -148,6 +128,46 @@ pred Merge[parentCommit: CommitNode] {
     
 }
 
+// pred Merge[parentCommit: CommitNode] {
+//     // 1) Activate exactly one new commit
+//     some newCommit: CommitNode |
+//         newCommit in Unused.unusedCommits
+//         Unused.unusedCommits' = Unused.unusedCommits - newCommit
+//         Repo.totalCommits'     = Repo.totalCommits + newCommit
+
+//         // 2) Initialize its fields
+//         newCommit.next'            = none
+//         newCommit.outgoingBranches'= none
+
+//         // 3) Find the “target” commit in the parent’s chain to attach to
+//         some targetCommit: CommitNode |
+//             targetCommit in parentCommit.*next and targetCommit.next = none
+//             targetCommit.next'            = newCommit
+//             targetCommit.outgoingBranches'= targetCommit.outgoingBranches
+//             targetCommit.fileState'       = targetCommit.fileState
+
+//             // 4) Pick a branch off that parentCommit to merge from
+//             some rootToMerge: CommitNode |
+//                 rootToMerge in parentCommit.outgoingBranches
+//                 // 4a) Identify its head commit
+//                 some commitToMerge: CommitNode |
+//                     commitToMerge in rootToMerge.*next and commitToMerge.next = none
+//                     commitToMerge.next'            = newCommit
+//                     commitToMerge.outgoingBranches'= commitToMerge.outgoingBranches
+//                     commitToMerge.fileState'       = commitToMerge.fileState
+
+//                     // 5) Override the new commit’s fileState with the merged content
+//                     newCommit.fileState' = commitToMerge.fileState
+
+//                     // 6) Leave _all other_ commits untouched
+//                     all c: CommitNode |
+//                         c != newCommit and c != targetCommit and c != commitToMerge implies {
+//                             c.next'            = c.next
+//                             c.outgoingBranches'= c.outgoingBranches
+//                             c.fileState'       = c.fileState
+//                         }
+// }
+
 
 // revertingTo is the CommitNode whose state we want to revert to
 pred Revert[revertingTo: CommitNode] {
@@ -173,6 +193,33 @@ pred Revert[revertingTo: CommitNode] {
         }
     }
 }
+
+// A version of Commit I created with no parameters. Kinda works, haven't tested it much. 
+// // It just contrains that a single Commit will occur at this timestep, but you have no control on which branch it occurs
+// // Probably we can delete
+// pred Commit2 {
+//     AddOneCommitNode
+
+//     // Add new CommitNode to the most recent CommitNode
+//     one parent: Repo.totalCommits | {
+//         // c is the parent of the new commit
+//         (parent.next = none)
+//         parent.next' = (Unused.unusedCommits - Unused.unusedCommits')
+//         parent.next'.next' = none
+//         parent.next'.outgoingBranches' = none
+//         parent.next'.fileState' != none
+//         parent.next'.fileState' != parent.fileState // New commit has different fileState than parent
+
+//         // All other CommitNodes' fields should remain the same
+//         all c: Repo.totalCommits | {
+//             (c != parent) => {
+//                 c.next' = c.next
+//                 c.outgoingBranches = c.outgoingBranches'
+//                 c.fileState = c.fileState'
+//             }
+//         }
+//     }
+// }
 
 -- abstraction: all commits are presumed to be valid, file modification is out of scope
 -- abstraction: concurrent committing modeled through interleaved commits in Forge (any branch modified at a given time)
