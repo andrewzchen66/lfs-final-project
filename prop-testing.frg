@@ -3,6 +3,11 @@
 open "sigs.frg"
 open "operations.frg"
 
+option max_tracelength 5
+option min_tracelength 2
+
+// PROPERTY TESTING:
+
 test suite for Init {
     assert { Init } is sat for exactly 1 Branch, exactly 1 User, exactly 1 CommitNode, exactly 1 Int
 }
@@ -41,3 +46,5 @@ test suite for PostOperationInvariants {
 
 
 // unit testing: tests of inclusion and exclusion for every predicate
+
+

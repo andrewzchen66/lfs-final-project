@@ -1,57 +1,7 @@
 #lang forge/temporal
-option max_tracelength 5
-option min_tracelength 2
-
-// ========== Core Signatures ==========
-sig User {}
-
-var sig Branch {
-    branchID: one Int,
-    root: one Root,
-    commits: set CommitNode,
-    prev: lone Branch
-}
-
-var sig CommitNode {
-    commitID: one Int,
-    currentBranch: one Branch,
-    next: lone CommitNode, -- sequential commits
-    commitBranches: set Branch,
-    fileState: one Int -- unique identifier for each file state
-}
-
-one sig Root extends CommitNode {}
-
-one sig Repo {
-    user: one User,
-    mainBranch: one Branch,
-    branches: set Branch,
-    totalCommits: set CommitNode
-}
 
 
-// ========== Initial State ==========
-pred Init {
-    // Only main branch exists initially
-    Branch = Repo.mainBranch
-    
-    // Main branch setup
-    Repo.mainBranch.commits = Root
-    Repo.mainBranch.root = Root
-    Repo.mainBranch.prev = none
-    Repo.mainBranch.branchID = 0
-    
-    // Root commit setup
-    Root.next = none
-    Root.currentBranch = Repo.mainBranch
-    Root.commitID = 0
-    Root.fileState = 0
-    
-    // No other commits exist initially
-    CommitNode = Root
-}
-
-// ========== Helper Functions ==========
+// ========== Helper Functions for Unit Testing ==========
 fun maxBranchID : one Int {
     max[Branch.branchID]
 }
