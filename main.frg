@@ -70,26 +70,6 @@ pred testBranchMerge {
 
 run testBranchMerge for exactly 4 CommitNode, exactly 2 Root, 7 Int
 
-pred testBranchMergeDiffRoots {
-    Init
-    always {
-        WellformedRepo
-    }
-    // Commit
-    Branching[Repo.firstRoot]
-    next_state Branching[Repo.firstRoot]
-    next_state next_state {
-        some b1, b2: Root - Repo.firstRoot | {
-          b1 in Repo.firstRoot.outgoingBranches
-          b2 in Repo.firstRoot.outgoingBranches
-          b1 != b2
-          Merge[b1, b2]
-        }
-    }
-}
-
-run testBranchMergeDiffRoots for exactly 7 CommitNode, exactly 3 Root, 5 Int
-
 
 // pred testBranchCommitMerge {
 //     Init

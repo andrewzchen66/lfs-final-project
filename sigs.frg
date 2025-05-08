@@ -187,7 +187,6 @@ pred WellformedBranch[r: Root] {
 
 // establish wellformedness for the entire repo
 pred WellformedRepo {
-
     all c: CommitNode | {
         // all commits are either in Repo or Unused
         (c in Repo.totalCommits and c not in Unused.unusedCommits) or (c not in Repo.totalCommits and c in Unused.unusedCommits)
