@@ -128,49 +128,48 @@ pred Branching[r: Root] {
     
 // }
 
+// 
 pred Merge[parentCommit: CommitNode, rootToMerge: Root] {
-    // make sure that branch must exist off parentCommit
-    rootToMerge in parentCommit.outgoingBranches
+  // you can only merge an existing branch
+  rootToMerge in parentCommit.outgoingBranches
 
-    // new commit after merge
-    some newCommit: CommitNode | {
-        newCommit in Unused.unusedCommits
-        Unused.unusedCommits' = Unused.unusedCommits - newCommit
-        Repo.totalCommits' = Repo.totalCommits + newCommit
+  // pick the new merge‑commit and the two tips that will point at it
+  some newCommit, intoTip, fromTip: CommitNode | {
+    newCommit in Unused.unusedCommits
+    Unused.unusedCommits' = Unused.unusedCommits - newCommit
+    Repo.totalCommits' = Repo.totalCommits + newCommit
 
-        // initialize newCommit
-        newCommit.next' = none
-        newCommit.outgoingBranches'= none
+    // initialize the new merge‑commit
+    newCommit.next' = none
+    newCommit.outgoingBranches' = none
 
-        // point parentCommit’s tip to newCommit
-        some targetCommit: CommitNode | {
-            targetCommit in parentCommit.*next and targetCommit.next = none
-            targetCommit.next' = newCommit
-            targetCommit.outgoingBranches'= targetCommit.outgoingBranches
-            targetCommit.fileState' = targetCommit.fileState
-        
+    // intoTip is tip of the parent commit of the branch you're merging into
+    intoTip in parentCommit.*next and intoTip.next = none
+    intoTip.next' = newCommit
+    intoTip.outgoingBranches'= intoTip.outgoingBranches
+    intoTip.fileState' = intoTip.fileState
 
-            // point rootToMerge’s tip to newCommit
-            some commitToMerge: CommitNode |{
-                commitToMerge in rootToMerge.*next and commitToMerge.next = none
-                commitToMerge.next' = newCommit
-                commitToMerge.outgoingBranches'= commitToMerge.outgoingBranches
-                commitToMerge.fileState' = commitToMerge.fileState
+    // get the tip of the root you're merging from
+    fromTip in rootToMerge.*next and fromTip.next = none
+    fromTip.next' = newCommit
+    fromTip.outgoingBranches'= fromTip.outgoingBranches
+    fromTip.fileState' = fromTip.fileState
 
-                // set merged fileState
-                newCommit.fileState' = commitToMerge.fileState
+    // pick the merge commit’s fileState from the “from” tip
+    // newCommit.fileState' = fromTip.fileState
 
-                // all other commits stay the same
-                all c: CommitNode | {
-                    c != newCommit and c != targetCommit and c != commitToMerge implies {
-                        c.next' = c.next
-                        c.outgoingBranches'= c.outgoingBranches
-                        c.fileState' = c.fileState
-                    }
-                }
-            }
-        }
+    some fs: Int | {
+        no c: CommitNode | c.fileState = fs
+        newCommit.fileState' = fs
     }
+
+    // all other commits should be untouched
+    all c: CommitNode | c not in (newCommit + intoTip + fromTip) implies {
+      c.next' = c.next
+      c.outgoingBranches' = c.outgoingBranches
+      c.fileState' = c.fileState
+    }
+  }
 }
 
 // revertingTo is the CommitNode whose state we want to revert to
@@ -207,11 +206,7 @@ pred Revert[revertingTo: CommitNode] {
 // create traces, init, condiitions for the middle, then the end pred
 // conditions in the trace: for x number of commits, the repo is acyclic
 
-// do a revert, push, then a pop
-
 // unit tests for core functions (branching, committing, reverting, etc)
-
-// use preds for proerties of git to prove important parts of git (acyclic, etc)
 
 // at the end, show what we really learned by modeling the system
 

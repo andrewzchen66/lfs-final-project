@@ -27,35 +27,6 @@ one sig Unused {
     var unusedCommits: set CommitNode // Set of all all Commits that are NOT currently being used in our model
 }
 
-//////////////////////// OLD SIGS ////////////////////////
-
-// sig Branch {
-//     var branchID: one Int,
-//     var root: one Root,
-//     var commits: set CommitNode,
-//     var prev: lone Branch
-// }
-
-// var sig CommitNode {
-//     var commitID: one Int,
-//     var currentBranch: one Branch,
-//     var next: lone CommitNode, -- sequential commits
-//     var commitBranches: set Branch,
-//     var fileState: one Int -- unique identifier for each file state
-// }
-
-// one sig Root extends CommitNode {}
-
-// one sig Repo {
-//     var user: one User,
-//     var mainBranch: one Branch,
-//     var branches: set Branch,
-//     var totalCommits: set CommitNode
-// }
-
-
-// abstract sig Modified extends File {}
-
 ////////////////////////////////////////////////////////////
 
 // establish the initial state of the repo
@@ -73,31 +44,6 @@ pred Init {
         c != Repo.firstRoot => c in Unused.unusedCommits
     }
 }
-
-// establish the initial state of the repo
-// pred Init {
-//     // there exists a user
-//     Repo.user != none
-
-//     // main branch exists alone in repo
-//     Repo.mainBranch in Repo.branches
-//     Repo.branches = Repo.mainBranch
-
-//     // main branch only has root commit
-//     Repo.mainBranch.commits = Repo.mainBranch.root
-
-//     // total commits accounts for the root commit
-//     Repo.totalCommits = Repo.mainBranch.root
-
-//     // verify root node in main branch has no successors
-//     Repo.mainBranch.root.next = none
-
-//     // verify that root branch is the main branch
-//     Repo.mainBranch.root.currentBranch = Repo.mainBranch
-
-//     // verify that mainBranch does not have a parent branch
-//     Repo.mainBranch.prev = none
-// }
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // PROPERTY TESTING!!!!!
@@ -288,9 +234,6 @@ pred WellformedRepo {
 
             // All non-firstRoots are all properly linked to a different CommitNode
             r != Repo.firstRoot => {
-                // ______________________________________________________
-                //r.prevBranchNode in Repo.firstRoot.*next
-                // ______________________________________________________
                 r.prevBranchNode in Repo.totalCommits
                 r in r.prevBranchNode.outgoingBranches
             }
@@ -303,59 +246,3 @@ pred WellformedRepo {
 
     Repo.firstRoot.prevBranchNode = none
 }
-
-// // establish wellformedness for all branches, or if all commits stem linearly from the root
-// pred WellformedBranch[b: Branch] {
-//     // confirm DAG structure
-//     Acyclic
-
-//     // branch has a root
-//     b.root in b.commits
-
-//     all c: b.commits | {
-//         // all commits are valid and reachable
-//         c in b.root.*next 
-
-//         // all commits belong to this branch
-//         c.currentBranch = b
-//     }
-// }
-
-// // establish wellformedness for the entire repo
-// pred WellformedRepo {
-//     all b: Repo.branches | {
-//         // wellformedness for all branches
-//         WellformedBranch[b]
-//     }
-
-//     all c: CommitNode | {
-//         // all commits are accounted for
-//         c in Repo.totalCommits
-
-//         // all commits are reachable from main branch root, no floating commits
-//         c in Repo.mainBranch.root.*next
-//     }
-
-//     // totalCommits accounts for all existing commits
-//     Repo.branches.commits in Repo.totalCommits
-
-//     // each branch has at least its root commit
-//     all b: Repo.branches | b.root in b.commits
-    
-//     // all commits in branches are accounted for in totalCommits
-//     Repo.branches.commits in Repo.totalCommits
-    
-//     // commits form a DAG (no cycles)
-//     no c: CommitNode | c in c.^next
-    
-//     // each commit (except root) has exactly one parent
-//     all c: CommitNode - Root | one c.next
-    
-//     // branches are properly linked via prev
-//     all b: Repo.branches - Repo.mainBranch | one b.prev
-
-//     // no dangling branches (all branches reachable via prev from main)
-//     Repo.branches in Repo.mainBranch.*prev
-
-// }
-
