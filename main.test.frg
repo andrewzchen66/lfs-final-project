@@ -21,191 +21,171 @@ option min_tracelength 2
 // init states
 // more properties for merging
 
+
 test suite for Init {
-    example pos_Init is {Init} for {
-        User = `u
-        Branch = `b
-        CommitNode = `c1 + `c2
-        Int = `i0 + `i1 + `i2
-        Root = `root
-        Repo = `r
-        `r.mainBranch = `b
+    // assert {InitSAT and Init} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 1 Root, exactly 3 Int
+    // assert {InitUNSAT and Init} is unsat for exactly 1 Repo, exactly 4 CommitNode, exactly 1 Root, exactly 3 Int
+}
+
+// SAT: one firstRoot, others unused
+pred InitSAT {
+    some r: Repo, fr: CommitNode | {
+        r.totalCommits = fr
+        r.firstRoot = fr
+
+        fr.next = none
+        fr.outgoingBranches = none
+        fr.prevBranchNode = none
+
+        all c: CommitNode - fr | c in Unused.unusedCommits
     }
 }
 
-// pred testOneCommit {
-//   Init
-//   some b: Branch | b = Repo.mainBranch and Commit[b]
-//   WellformedRepo
-//   Acyclic
-// }
-// run testOneCommit for exactly 1 Branch, exactly 1 User, 2 CommitNode, 3 Int
+// UNSAT: one firstRoot, others are used in next fields of firstRoot but shouldn't be 
+pred InitUNSAT {
+    some r: Repo, fr: CommitNode, c: CommitNode | {
+        r.totalCommits = fr
+        r.firstRoot = fr
 
-// test suite for OneCommit {
-//     example pos_OneCommit is {testOneCommit} for {
-//         User = `u
-//         Branch = `b
-//         CommitNode = `c1 + `c2
-//         Int = `i0 + `i1 + `i2
-//         Root = `root
-//         Repo = `r
-//         `r.mainBranch = `b
-//     }
-// }
+        fr.next = none
+        fr.outgoingBranches = none
+        fr.prevBranchNode = none
 
-// test suite for TwoCommits {
-//     example pos_TwoCommits is {testTwoCommits} for {
-//         User = `u
-//         Branch = `b
-//         CommitNode = `c1 + `c2 + `c3
-//         Int = `i0 + `i1 + `i2 + `i3
-//         Repo.mainBranch = `b
-//     }
-// }
+        c != fr
+        c not in Unused.unusedCommits
+    }
+}
 
-// test suite for Branching {
-//     example pos_Branching is {testBranching} for {
-//         User = `u
-//         Branch = `main + `feature
-//         CommitNode = `c1 + `c2
-//         Int = `i0 + `i1 + `i2 + `i3
-//         Repo.mainBranch = `main
-//     }
-// }
+test suite for AddOneCommitNode {
+    // assert {AddOneCommitNodeSAT and AddOneCommitNode} is sat for exactly 1 Repo, exactly 3 CommitNode, exactly 1 Root, exactly 3 Int
+    // assert {AddOneCommitNodeUNSAT and AddOneCommitNode} is unsat for exactly 1 Repo, exactly 3 CommitNode, exactly 1 Root, exactly 3 Int
+}
 
-// test suite for BranchThenCommit {
-//     example pos_BranchThenCommit is {testBranchThenCommit} for {
-//         User = `u
-//         Branch = `main + `feature
-//         CommitNode = `c1 + `c2 + `c3
-//         Int = `i0 + `i1 + `i2 + `i3 + `i4
-//         Repo.mainBranch = `main
-//     }
-// }
+// SAT: adding a commitNode into Repo reduces the number of unusedCommits by 1
+pred AddOneCommitNodeSAT {
+    Init
+    one c: Unused.unusedCommits | {
+        Unused.unusedCommits' = Unused.unusedCommits - c
+        Repo.totalCommits' = Repo.totalCommits + c
+    }
+}
 
-// test suite for UniqueCommitIDs {
-//     example pos_UniqueCommitIDs is {testUniqueCommitIDs} for {
-//         User = `u
-//         Branch = `main
-//         CommitNode = `c1 + `c2 + `c3
-//         Int = `i0 + `i1 + `i2 + `i3 + `i4
-//         Repo.mainBranch = `main
-//     }
-// }
+// UNSAT: can’t move anything from unused to repo because none are unused
+pred AddOneCommitNodeUNSAT {
+    Init
+    Unused.unusedCommits = none
+    some Repo.totalCommits
+    Unused.unusedCommits' = Unused.unusedCommits
+}
 
-// test suite for RevertAfterCommit {
-//     example pos_RevertAfterCommit is {testRevertAfterCommit} for {
-//         User = `u
-//         Branch = `main
-//         CommitNode = `c1 + `c2
-//         Int = `i0 + `i1 + `i2 + `i3
-//         Repo.mainBranch = `main
-//     }
+test suite for Commit {
+    // assert {CommitSAT} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 1 Root, exactly 3 Int
+    // assert {CommitUNSAT} is unsat for exactly 1 Repo, exactly 4 CommitNode, exactly 1 Root, exactly 3 Int
+}
+
+// SAT: can commit from inital state
+pred CommitSAT {
+    Init
+    some r: Root | Commit[r]
+}
+
+// UNSAT: no unused commits to add
+pred CommitUNSAT {
+    Init
+    Unused.unusedCommits = none
+    some r: Root | Commit[r]
+}
+
+// test suite for Commit2 {
+//     assert {Commit2SAT} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 1 Root, exactly 3 Int
+//     assert {Commit2UNSAT} is unsat for exactly 1 Repo, exactly 4 CommitNode, exactly 1 Root, exactly 3 Int
+// }
+// pred Commit2SAT {
+//     Init
+//     Commit2
 // }
 
-// test suite for MergeFeatureIntoMain {
-//     example pos_MergeFeatureIntoMain is {testMergeFeatureIntoMain} for {
-//         User = `u
-//         Branch = `main + `feature
-//         CommitNode = `c1 + `c2 + `c3 + `c4
-//         Int = `i0 + `i1 + `i2 + `i3 + `i4
-//         Repo.mainBranch = `main
-//     }
+// pred Commit2UNSAT {
+//     Init
+//     Unused.unusedCommits = none
+//     Commit2
 // }
 
-// test suite for ConcurrentCommits {
-//     example pos_ConcurrentCommits is {testConcurrentCommits} for {
-//         User = `u
-//         Branch = `main + `feature
-//         CommitNode = `c1 + `c2 + `c3 + `c4
-//         Int = `i0 + `i1 + `i2 + `i3 + `i4
-//         Repo.mainBranch = `main
-//     }
-// }
+test suite for Branching {
+    // assert {BranchingSAT} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+    // assert {BranchingUNSAT} is unsat for exactly 1 Repo, exactly 2 CommitNode, exactly 2 Root, exactly 3 Int
+}
+
+// SAT: sanity 
+pred BranchingSAT {
+    Init
+    some r: Root | Branching[r]
+}
+
+// UNSAT: cannot branch with no unusedCommits 
+pred BranchingUNSAT {
+    Init
+    Unused.unusedCommits = none
+    some r: Root | Branching[r]
+}
+
+test suite for Merge {
+    // assert {MergeSAT} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+    // assert {MergeUNSAT} is unsat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+}
+
+// not working
+pred MergeSAT {
+    Init
+    // manually add a child to allow branching for merge
+    some parent: CommitNode, r: Root | {
+        next_state Branching[r] 
+        next_state next_state {
+            parent in Repo.totalCommits
+            parent.next = none
+            parent.outgoingBranches = r
+            Merge[parent]
+        }
+    }
+}
+
+pred MergeUNSAT {
+    Init
+    Unused.unusedCommits = none
+    some c: CommitNode | Merge[c]
+}
+
+test suite for Revert {
+    assert {RevertSAT} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+    assert {RevertUNSAT} is unsat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+}
+
+pred RevertSAT {
+    Init
+    some c: CommitNode | {
+        c in Repo.totalCommits
+        some p: CommitNode | {
+            p in c.*next and p.next = none
+            Revert[c]
+        }
+    }
+}
+
+// UNSAT parent.next future timesteps do not match what's expected... EXPLAIN 
+pred RevertUNSAT {
+    Init
+    some c: CommitNode | Revert[c]
+    one parent: Repo.totalCommits | {
+        (parent in revertingTo.*next and parent.next = none)
+        parent.next' = (Unused.unusedCommits - Unused.unusedCommits')
+        parent.outgoingBranches' = parent.outgoingBranches
+        parent.fileState' = parent.fileState
+        
+        parent.next'.next' != none
+        parent.next'.outgoingBranches' != none
+        parent.next'.fileState' != revertingTo.fileState // new commit should have the same fileState as revertingTo, testing when it doesn't
+    }
+}
 
 
-// pred testInit {
-//   Init
-//   WellformedRepo
-//   validCommitIDs
-//   validBranchIDs
-// }
-// run testInit for exactly 1 Branch, exactly 1 User, 1 CommitNode, 2 Int
-
-
-
-// pred testTwoCommits {
-//   Init
-//   some b: Branch | b = Repo.mainBranch and Commit[b]
-//   next some b: Branch | b = Repo.mainBranch and Commit[b]
-//   always WellformedRepo
-//   always Acyclic
-// }
-// run testTwoCommits for exactly 1 Branch, exactly 1 User, 3 CommitNode, 4 Int
-
-// pred testBranching {
-//   Init
-//   some b: Branch, from: Branch | from = Repo.mainBranch and Branching[b, from]
-//   WellformedRepo
-//   Acyclic
-// }
-// run testBranching for exactly 2 Branch, exactly 1 User, 2 CommitNode, 4 Int
-
-// pred testBranchThenCommit {
-//   Init
-//   some b: Branch, from: Branch | from = Repo.mainBranch and Branching[b, from]
-//   next some b2: Branch | Commit[b2]
-//   always WellformedRepo
-//   always Acyclic
-// }
-// run testBranchThenCommit for exactly 2 Branch, exactly 1 User, 3 CommitNode, 5 Int
-
-// pred testUniqueCommitIDs {
-//   Init
-//   some b: Branch | Commit[b]
-//   next some b: Branch | Commit[b]
-//   validCommitIDs
-// }
-// run testUniqueCommitIDs for exactly 1 Branch, exactly 1 User, 3 CommitNode, 5 Int
-
-// pred testRevertAfterCommit {
-//   Init
-//   some b: Branch | b = Repo.mainBranch and Commit[b]
-//   next some b: Branch | Revert[b]
-//   always WellformedRepo
-//   always Acyclic
-// }
-// run testRevertAfterCommit for exactly 1 Branch, exactly 1 User, 2 CommitNode, 4 Int
-
-// pred testMergeFeatureIntoMain {
-//   Init
-//   some f: Branch, m: Branch | {
-//     m = Repo.mainBranch
-//     Branching[f, m]
-//   }
-//   next some f: Branch | Commit[f]
-//   next some m: Branch | Commit[m]
-//   next some f, m: Branch | Merge[f, m]
-//   always WellformedRepo
-//   always Acyclic
-// }
-// run testMergeFeatureIntoMain for exactly 2 Branch, exactly 1 User, 4 CommitNode, 5 Int
-
-// pred testConcurrentCommits {
-//   Init
-//   some f: Branch, m: Branch | {
-//     m = Repo.mainBranch
-//     Branching[f, m]
-//   }
-
-//   // Interleaved commits
-//   next some f: Branch | Commit[f]
-//   next some m: Branch | Commit[m]
-//   next some f: Branch | Commit[f]
-
-//   always WellformedRepo
-//   always Acyclic
-//   validCommitIDs
-// }
-// run testConcurrentCommits for exactly 2 Branch, exactly 1 User, 4 CommitNode, 5 Int
 
