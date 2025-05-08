@@ -1,5 +1,7 @@
 #lang forge/temporal
 
+#lang forge/temporal
+
 open "sigs.frg"
 
 -- abstraction: all commits are presumed to be valid, file modification is out of scope
@@ -93,9 +95,9 @@ pred Branching[b: Branch, from: Branch] {
 }
 
 // When you run git revert <commit>, Git creates a new commit that inverts the changes introduced by <commit>—without altering history (unlike reset). It does so by computing a patch that undoes the diff introduced by the target commit.
-pred Revert[b: Branch, commitId: Int] {
+// pred Revert[b: Branch, commitId: Int] {
 
-}
+// }
 
 // both branches 
 pred Merge[featureBranch, destinationBranch: Branch] {
