@@ -33,7 +33,7 @@ test suite for Invariants {
 
 // after any two arbitrary operations, properties must be preserved
 
-pred twoStepTrace {
+pred threeStepTrace {
     Init
     WellformedRepo
     some r1, r2: Root | Branching[r1] or Commit[r2]
@@ -44,10 +44,10 @@ pred twoStepTrace {
 }
 
 test suite for PostOperationInvariants {
-    assert { twoStepTrace } is sufficient for PostOperationInvariants
+    assert { threeStepTrace } is sufficient for PostOperationInvariants
 
-    assert { twoStepTrace and CommitDeletionAllowed } is unsat for exactly 1 Repo, 1 Root, 2 CommitNode
-    assert { twoStepTrace and MutableHistory } is unsat for exactly 1 Repo, 1 Root, 2 CommitNode
+    assert { threeStepTrace and CommitDeletionAllowed } is unsat for exactly 1 Repo, 1 Root, 2 CommitNode
+    assert { threeStepTrace and MutableHistory } is unsat for exactly 1 Repo, 1 Root, 2 CommitNode
 }
 
 
