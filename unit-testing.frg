@@ -2,7 +2,6 @@
 
 open "operations.frg"
 open "sigs.frg"
-open "main.frg"
 
 option max_tracelength 6
 option min_tracelength 6
@@ -214,10 +213,15 @@ pred BranchingUNSAT {
 test suite for Merge {
     assert {MergeSAT1} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
     assert {MergeSAT2} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+<<<<<<< HEAD:main.test.frg
     assert {MergeSAT3} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
     assert {MergeSAT4} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
     assert {MergeUNSAT} is unsat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
     assert {MergeUNSAT2} is unsat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+=======
+    // assert {MergeUNSAT} is unsat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+    // assert {MergeUNSAT2} is unsat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+>>>>>>> 22ea444c908bfb5403cd12b2f4ea04cb579602a0:unit-testing.frg
 }
 
 // SAT: after branching and committing, can merge

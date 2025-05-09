@@ -12,28 +12,12 @@ label:
 size:
   selector: CommitNode
   value: 25
-edge:
-  - selector: next
-    style: straight
-    orientation: below
-    length: 20
-  - selector: unusedCommits
-    style: straight
-    orientation: below
-    length: 20
-  - selector: outgoingBranches
-    style: straight
-    orientation: directlyRight
-    length: 20
-  - selector: prevBranchNode
-    style: straight
-    orientation: directlyLeft
-    length: 20
 constraints:
   - orientation:
       selector: next
       directions:
-        - directlyBelow
+        - below
+        - right
     spacing: 20
   - orientation:
       selector: unusedCommits
