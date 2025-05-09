@@ -174,9 +174,7 @@ pred WellformedBranch[r: Root] {
     
     no otherRoot: Root | {
         // Only one root allowed for this branch
-        otherRoot in r.^next 
-
-        
+        otherRoot in r.^next         
     }
 
     // root shouldn't have a parent CommitNode
@@ -192,17 +190,13 @@ pred WellformedRepo {
         (c in Repo.totalCommits and c not in Unused.unusedCommits) or (c not in Repo.totalCommits and c in Unused.unusedCommits)
 
         // Reachable from firstRoot means it's in use
-        // TODO: reachable may be auto-evaluating to false, double check this
         reachable[c, Repo.firstRoot, next, outgoingBranches] => (c in Repo.totalCommits and c not in Unused.unusedCommits)
-        // not reachable[c, Repo.firstRoot, next, outgoingBranches] => (c not in Repo.totalCommits and c in Unused.unusedCommits)
 
         // If commit in Repo
         c in Repo.totalCommits => {
             // 1) commitNode's states remain same
             c.fileState != none
             c.fileState = c.fileState'
-            // c.next != none => c.next = c.next'
-            // c.outgoingBranches = c.outgoingBranches'
 
             // 2) Once a commit has been used, it will always be in use
             c in Repo.totalCommits'

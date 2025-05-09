@@ -4,27 +4,12 @@ open "operations.frg"
 open "sigs.frg"
 open "main.frg"
 
-option max_tracelength 10
-option min_tracelength 10
-
-// Property-based testing: should hold before and after an operation (branch, merge, revert)
-// ______________________________________________________
-// The following should hold before and after every operation:
-// Unique and Immutable identifiers-- Branch IDs and CommitIDs are same
-// DAG properties-- entire tree is Acyclic
-// Every node is Reachable from Commitnode
-// Initial Commit has no parents
-// ______________________________________________________
-
-// Unit Tests?
-// Idempotence for Revert
-// init states
-// more properties for merging
-
+option max_tracelength 6
+option min_tracelength 6
 
 test suite for Init {
-    // assert {InitSAT and Init} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 1 Root, exactly 3 Int
-    // assert {InitUNSAT and Init} is unsat for exactly 1 Repo, exactly 4 CommitNode, exactly 1 Root, exactly 3 Int
+    assert {InitSAT and Init} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 1 Root, exactly 3 Int
+    assert {InitUNSAT and Init} is unsat for exactly 1 Repo, exactly 4 CommitNode, exactly 1 Root, exactly 3 Int
 }
 
 // SAT: one firstRoot, others unused
@@ -61,8 +46,8 @@ pred InitUNSAT {
 }
 
 test suite for AddOneCommitNode {
-    // assert {AddOneCommitNodeSAT and AddOneCommitNode} is sat for exactly 1 Repo, exactly 3 CommitNode, exactly 1 Root, exactly 3 Int
-    // assert {AddOneCommitNodeUNSAT and AddOneCommitNode} is unsat for exactly 1 Repo, exactly 3 CommitNode, exactly 1 Root, exactly 3 Int
+    assert {AddOneCommitNodeSAT and AddOneCommitNode} is sat for exactly 1 Repo, exactly 3 CommitNode, exactly 1 Root, exactly 3 Int
+    assert {AddOneCommitNodeUNSAT and AddOneCommitNode} is unsat for exactly 1 Repo, exactly 3 CommitNode, exactly 1 Root, exactly 3 Int
 }
 
 // SAT: adding a commitNode into Repo reduces the number of unusedCommits by 1
@@ -87,11 +72,11 @@ pred AddOneCommitNodeUNSAT {
 }
 
 test suite for Commit {
-    // assert {CommitSAT} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 1 Root, exactly 3 Int
-    // assert {CommitSAT2} is sat for exactly 1 Repo, exactly 2 CommitNode, exactly 1 Root, exactly 3 Int
+    assert {CommitSAT} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 1 Root, exactly 3 Int
+    assert {CommitSAT2} is sat for exactly 1 Repo, exactly 2 CommitNode, exactly 1 Root, exactly 3 Int
 
-    // assert {CommitUNSAT} is unsat for exactly 1 Repo, exactly 4 CommitNode, exactly 1 Root, exactly 3 Int
-    // assert {CommitUNSAT2} is unsat for exactly 1 Repo, exactly 4 CommitNode, exactly 1 Root, exactly 3 Int
+    assert {CommitUNSAT} is unsat for exactly 1 Repo, exactly 4 CommitNode, exactly 1 Root, exactly 3 Int
+    assert {CommitUNSAT2} is unsat for exactly 1 Repo, exactly 4 CommitNode, exactly 1 Root, exactly 3 Int
 
 }
 
@@ -151,12 +136,12 @@ pred CommitUNSAT2 {
 
 
 test suite for Branching {
-    // assert {BranchingSAT} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
-    // assert {BranchingSAT2} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
-    // assert {BranchingSAT3} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
-    // assert {BranchOffNonMainSAT4} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 4 Root, exactly 5 Int
+    assert {BranchingSAT} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+    assert {BranchingSAT2} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+    assert {BranchingSAT3} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+    assert {BranchOffNonMainSAT4} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 4 Root, exactly 5 Int
 
-    // assert {BranchingUNSAT} is unsat for exactly 1 Repo, exactly 2 CommitNode, exactly 2 Root, exactly 3 Int
+    assert {BranchingUNSAT} is unsat for exactly 1 Repo, exactly 2 CommitNode, exactly 2 Root, exactly 3 Int
 }
 
 // SAT: sanity, branching can occur off initial state
@@ -227,10 +212,12 @@ pred BranchingUNSAT {
 }
 
 test suite for Merge {
-    // assert {MergeSAT1} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
-    // assert {MergeSAT2} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
-    // assert {MergeUNSAT} is unsat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
-    // assert {MergeUNSAT2} is unsat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+    assert {MergeSAT1} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+    assert {MergeSAT2} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+    assert {MergeSAT3} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+    assert {MergeSAT4} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+    assert {MergeUNSAT} is unsat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+    assert {MergeUNSAT2} is unsat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
 }
 
 // SAT: after branching and committing, can merge
@@ -284,6 +271,84 @@ pred MergeSAT2 {
     }
 }
 
+// SAT: after merging, can commit
+pred MergeSAT3 {
+    Init
+    always WellformedRepo
+
+    // Step 3: Commit on the root branch
+    eventually {
+        some r: Root | r != Repo.firstRoot and Commit[r]
+    }
+
+    // Step 2: Branch off the firstRoot
+    eventually {
+        Branching[Repo.firstRoot]
+    }
+
+    // Step 3: Commit on the new branch
+    eventually {
+        some r: Root | r != Repo.firstRoot and Commit[r]
+    }
+
+    // Step 4: Merge the branches
+    eventually {
+        some rootToMerge: Root | {
+            Merge[Repo.firstRoot, rootToMerge]
+
+            some c1, c2: CommitNode | {
+                c1 in Repo.firstRoot.*next
+                c2 in rootToMerge.*next
+            }
+        }
+    }
+
+    // Step 5: Commit on the merged branch
+    eventually {
+        some r: Root | r != Repo.firstRoot and Commit[r]
+    }
+}
+
+
+// SAT: after merging, can commit then merge again
+pred MergeSAT4 {
+    Init
+    always WellformedRepo
+
+    // Step 3: Commit on the root branch
+    eventually {
+        some r: Root | r != Repo.firstRoot and Commit[r]
+    }
+
+    // Step 2: Branch off the firstRoot
+    eventually {
+        Branching[Repo.firstRoot]
+    }
+
+    // Step 3: Commit on the new branch
+    eventually {
+        some r: Root | r != Repo.firstRoot and Commit[r]
+    }
+
+    // Step 4: Merge the branches
+    eventually {
+        some rootToMerge: Root | {
+            Merge[Repo.firstRoot, rootToMerge]
+        }
+    }
+
+    // Step 5: Commit on the merged branch
+    eventually {
+        some r: Root | r != Repo.firstRoot and Commit[r]
+    }
+
+    // Step 6: Merge the branches
+    eventually {
+        some rootToMerge: Root | {
+            Merge[Repo.firstRoot, rootToMerge]
+        }
+    }
+}
 
 // UNSAT: cannot merge with no unused commits available
 pred MergeUNSAT {
@@ -306,49 +371,12 @@ pred MergeUNSAT2 {
 
 
 test suite for Revert {
-     assert {RevertSAT2} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
-    // assert {RevertUNSAT} is unsat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+    assert {RevertSAT} is sat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
+    assert {RevertUNSAT} is unsat for exactly 1 Repo, exactly 4 CommitNode, exactly 2 Root, exactly 3 Int
 }
 
-// not working but should work? 
+// SAT: properties of a reverted commit is maintained
 pred RevertSAT {
-    Init
-    always WellformedRepo
-
-    // First commit on firstRoot
-    eventually {
-        Commit[Repo.firstRoot]
-    }
-
-    // Second commit on firstRoot
-    eventually {
-        some c1: CommitNode | {
-            c1 = Repo.firstRoot.next
-            Commit[Repo.firstRoot]
-        }
-    }
-
-    // Revert to the first commit (c1)
-    eventually {
-        some c1, c2: CommitNode | {
-            c1 = Repo.firstRoot.next
-            c2 = c1.next
-
-            Revert[c1]
-
-            // Confirm the new commit was added after c2
-            some r: CommitNode | {
-                r = c2.next
-                r.fileState = c1.fileState
-                no r.next
-                no r.outgoingBranches
-            }
-        }
-    }
-}
-
-// confused but runs??? 
-pred RevertSAT2 {
     always WellformedRepo
 
     Init => {

@@ -4,13 +4,6 @@ open "sigs.frg"
 
 // Move a CommitNode from Unused to Repo.totalCommits
 pred AddOneCommitNode {
-    // some newCommit: CommitNode | {
-    //     newCommit in Unused.unusedCommits
-
-    //     // remove it from Unused, add it to totalCommits
-    //     Unused.unusedCommits' = Unused.unusedCommits - newCommit
-    //     Repo.totalCommits' = Repo.totalCommits + newCommit
-    // }
     Unused.unusedCommits' in Unused.unusedCommits
     Repo.totalCommits in Repo.totalCommits'
     #{Unused.unusedCommits - Unused.unusedCommits'} = 1
@@ -53,6 +46,7 @@ pred Commit[r: Root] {
 
 }
 
+// creates new branch off of a specified root
 pred Branching[r: Root] {
     AddOneCommitNode
 
@@ -79,56 +73,7 @@ pred Branching[r: Root] {
     }
 }
 
-// parentCommit is the CommitNode that the branch we want to merge branches off of.
 // We create a new CommitNode at the end of parentCommit's branch with the merged state of the branch we merge
-// NOTE: In our merge, we always override target branch's filestate with our to-be-merged branch's fileState
-// pred Merge[parentCommit: CommitNode] {
-//     // TODO: Currently we are unable to specify the exact branch to merge, 
-//     // we just grab an arbitrary rootToMerge parentCommit.outgoingBranches.
-//     // It would involve adding a parameter for the Root that we want to merge.
-//     // I didn't do this because I didn't know how to test this, as the only root
-//     // I can access is Repo.firstRoot, which you obviously can't merge
-    
-//     AddOneCommitNode
-
-//     one newCommit: CommitNode | { // The new Commit we are adding after Merge
-//         newCommit = Unused.unusedCommits - Unused.unusedCommits'
-//         newCommit.next' = none
-//         newCommit.outgoingBranches' = none
-
-//         one targetCommit: CommitNode | { // The Commit we are merging into
-//             (targetCommit in parentCommit.*next and targetCommit.next = none)
-//             targetCommit.next' = newCommit // Point to newCommit!
-//             targetCommit.outgoingBranches' = targetCommit.outgoingBranches
-//             targetCommit.fileState' = targetCommit.fileState
-
-//             one rootToMerge: parentCommit.outgoingBranches | { // The root that we're merging into
-//                 // Keep all rootToMerge fields the same
-//                 one commitToMerge: Repo.totalCommits | { // commit that we are merging
-//                     (commitToMerge in rootToMerge.*next and commitToMerge.next = none)
-//                     commitToMerge.next' = newCommit // Point to newCommit!
-//                     commitToMerge.outgoingBranches' = commitToMerge.outgoingBranches
-//                     commitToMerge.fileState' = commitToMerge.fileState
-
-//                     // Override newCommit's fileState with the merged Commit's filestate
-//                     newCommit.fileState' = commitToMerge.fileState 
-
-//                     // Keep OtherCommits the same
-//                     all c: Repo.totalCommits | {
-//                         not (c = newCommit or c = targetCommit or c = commitToMerge) => {
-//                             c.next' = c.next
-//                             c.outgoingBranches = c.outgoingBranches'
-//                             c.fileState = c.fileState'
-//                         }
-//                     }
-//                 }
-//             }
-//         }
-//     }
-    
-// }
-
-// 
 pred Merge[parentCommit: CommitNode, rootToMerge: Root] {
   // you can only merge an existing branch
   rootToMerge in parentCommit.outgoingBranches
@@ -156,12 +101,8 @@ pred Merge[parentCommit: CommitNode, rootToMerge: Root] {
     fromTip.fileState' = fromTip.fileState
 
     // pick the merge commit’s fileState from the “from” tip
-    // newCommit.fileState' = fromTip.fileState
-
-    some fs: Int | {
-        no c: CommitNode | c.fileState = fs
-        newCommit.fileState' = fs
-    }
+    (intoTip.fileState = fromTip.fileState) implies ((newCommit.fileState' = intoTip.fileState) or (newCommit.fileState' = fromTip.fileState))
+    (intoTip.fileState != fromTip.fileState) implies ((newCommit.fileState' != intoTip.fileState) and (newCommit.fileState' != fromTip.fileState))
 
     // all other commits should be untouched
     all c: CommitNode | c not in (newCommit + intoTip + fromTip) implies {
@@ -196,21 +137,3 @@ pred Revert[revertingTo: CommitNode] {
         }
     }
 }
-
-
--- abstraction: all commits are presumed to be valid, file modification is out of scope
--- abstraction: concurrent committing modeled through interleaved commits in Forge (any branch modified at a given time)
-
-// create end condition to eventually reach
-
-// create traces, init, condiitions for the middle, then the end pred
-// conditions in the trace: for x number of commits, the repo is acyclic
-
-// unit tests for core functions (branching, committing, reverting, etc)
-
-// at the end, show what we really learned by modeling the system
-
-// focus on presentation!!!
-// prepare to answer any questions, make a readme
-
-// design check: where do we call branching in the predicates when we run

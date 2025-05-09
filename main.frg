@@ -3,8 +3,8 @@
 open "operations.frg"
 open "sigs.frg"
 
-option max_tracelength 6
-option min_tracelength 6
+option max_tracelength 3
+option min_tracelength 3
 
 // I want this to be the ideal test format, but things like always Commit return UNSAT
 // pred genericTest {
@@ -40,18 +40,28 @@ pred testBranchOneNode {
 
 // run testBranchOneNode for exactly 4 CommitNode, exactly 2 Root, 5 Int
 
-pred testBranch3 {
-    Init
-    always{
-        WellformedRepo
-    }
-    // Commit
-    Branching[Repo.firstRoot]
-    next_state Branching[Repo.firstRoot]
-    next_state next_state Branching[Repo.firstRoot]
+// pred testBranch3 {
+//     Init
+//     always{
+//         WellformedRepo
+//     }
+//     // Commit
+//     Branching[Repo.firstRoot]
+//     next_state Branching[Repo.firstRoot]
+//     next_state next_state Branching[Repo.firstRoot]
 
-}
-//run testBranch3 for exactly 4 CommitNode, exactly 4 Root, 5 Int
+//     next_state next_state next_state {
+//         all roots: Repo.totalCommits | {
+//             roots != Repo.firstRoot
+//             // r in Repo.firstRoot.*next
+//             eventually {
+//                 Merge[Repo.firstRoot, roots]
+//             }
+//         }
+//     }
+
+// }
+// run testBranch3 for exactly 4 CommitNode, exactly 4 Root, 5 Int
 
 pred testBranchMerge {
     Init
