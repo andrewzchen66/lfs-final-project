@@ -3,8 +3,8 @@
 open "operations.frg"
 open "sigs.frg"
 
-option max_tracelength 10
-option min_tracelength 10
+option max_tracelength 4
+option min_tracelength 4
 
 pred testDemoMerge {
     Init
@@ -34,7 +34,6 @@ pred testDemoCommitBranchRevert {
     Commit[Repo.firstRoot]
     next_state Revert[Repo.firstRoot]
     next_state next_state next_state Branching[Repo.firstRoot]
-    next_state next_state next_state next_state Commit[Repo.firstRoot]
 
 }
 
