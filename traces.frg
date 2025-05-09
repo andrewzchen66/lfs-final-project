@@ -33,9 +33,8 @@ pred testDemoCommitBranchRevert {
     
     Commit[Repo.firstRoot]
     next_state Revert[Repo.firstRoot]
-    next_state next_state next_state Commit[Repo.firstRoot]
-    next_state next_state next_state next_state Branching[Repo.firstRoot]
-    next_state next_state next_state next_state next_state Commit[Repo.firstRoot]
+    next_state next_state next_state Branching[Repo.firstRoot]
+    next_state next_state next_state next_state Commit[Repo.firstRoot]
 
 }
 
